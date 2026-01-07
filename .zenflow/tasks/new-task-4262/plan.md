@@ -68,10 +68,11 @@ Implement Zoom OAuth flow, meeting details retrieval, and recording download.
 
 ---
 
-### [ ] Task 5: Enhanced Transcription with Timestamps
+### [x] Task 5: Enhanced Transcription with Timestamps
+<!-- chat-id: 5763f02a-d2ce-41f3-b075-818eaa8c13fc -->
 Integrate Deepgram or AssemblyAI for word-level timestamp transcription.
 
-**Files**: `backend/word_timestamp_transcriber.py` (new), `backend/transcriber.py`
+**Files**: `backend/word_timestamp_transcriber.py` (new), `backend/app.py`
 
 ---
 

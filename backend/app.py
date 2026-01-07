@@ -7,10 +7,12 @@ from pathlib import Path
 
 from config import (
     SECRET_KEY, CORS_ORIGINS, UPLOAD_FOLDER, RECORDINGS_FOLDER,
-    ZOOM_CLIENT_ID, ZOOM_CLIENT_SECRET, ZOOM_REDIRECT_URI
+    ZOOM_CLIENT_ID, ZOOM_CLIENT_SECRET, ZOOM_REDIRECT_URI,
+    DEEPGRAM_API_KEY, ASSEMBLYAI_API_KEY, DEFAULT_TRANSCRIPTION_SERVICE
 )
 from storage import MeetingStorage
 from platform_integrations.zoom_integration import ZoomPlatform
+from word_timestamp_transcriber import WordTimestampTranscriber
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = SECRET_KEY
@@ -288,6 +290,59 @@ def add_participant(meeting_id):
     
     meeting = storage.get_meeting(meeting_id)
     return jsonify({'meeting': meeting})
+
+
+@app.route('/api/meetings/<meeting_id>/transcribe', methods=['POST'])
+def transcribe_meeting(meeting_id):
+    meeting = storage.get_meeting(meeting_id)
+    if not meeting:
+        return jsonify({'error': 'Meeting not found'}), 404
+    
+    audio_file_path = meeting.get('audio_file_path')
+    if not audio_file_path or not os.path.exists(audio_file_path):
+        return jsonify({'error': 'Audio file not found'}), 404
+    
+    data = request.get_json() or {}
+    service = data.get('service', DEFAULT_TRANSCRIPTION_SERVICE)
+    
+    if service == 'deepgram':
+        api_key = DEEPGRAM_API_KEY
+    elif service == 'assemblyai':
+        api_key = ASSEMBLYAI_API_KEY
+    else:
+        return jsonify({'error': f'Unsupported transcription service: {service}'}), 400
+    
+    if not api_key:
+        return jsonify({'error': f'{service} API key not configured'}), 500
+    
+    try:
+        transcriber = WordTimestampTranscriber(service=service, api_key=api_key)
+        
+        result = transcriber.transcribe_with_timestamps(audio_file_path)
+        
+        participants = meeting.get('participants', [])
+        if participants:
+            result['segments'] = transcriber.map_speakers_to_participants(
+                result['segments'],
+                participants
+            )
+        
+        transcript_data = {
+            'segments': result['segments'],
+            'service': service
+        }
+        
+        storage.save_detailed_transcript(meeting_id, transcript_data)
+        
+        transcript = storage.get_detailed_transcript(meeting_id)
+        
+        return jsonify({
+            'message': 'Transcription completed successfully',
+            'transcript': transcript
+        }), 200
+    
+    except Exception as e:
+        return jsonify({'error': f'Transcription failed: {str(e)}'}), 500
 
 
 if __name__ == '__main__':
