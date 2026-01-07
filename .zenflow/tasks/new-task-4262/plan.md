@@ -36,7 +36,8 @@ See `spec.md` for full technical details and `implementation-plan.md` for detail
 
 ## Implementation Tasks
 
-### [ ] Task 1: Setup & Configuration
+### [x] Task 1: Setup & Configuration
+<!-- chat-id: d2b3661f-6ecd-4db5-902f-ba654f2f51dc -->
 Configure platform API credentials (Zoom, Deepgram/AssemblyAI) and update backend configuration.
 
 **Files**: `backend/config.py`, `backend/.env.example`
