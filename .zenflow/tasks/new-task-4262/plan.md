@@ -18,48 +18,113 @@ Do not make assumptions on important decisions — get clarification first.
 
 ## Workflow Steps
 
-### [ ] Step: Technical Specification
+### [x] Step: Technical Specification
 <!-- chat-id: 965a5b59-7a5c-4ae9-9636-6ad3ce9ae79b -->
 
-Assess the task's difficulty, as underestimating it leads to poor outcomes.
-- easy: Straightforward implementation, trivial bug fix or feature
-- medium: Moderate complexity, some edge cases or caveats to consider
-- hard: Complex logic, many caveats, architectural considerations, or high-risk changes
+**Difficulty**: Hard - Complex architectural transformation from physical to online meetings
 
-Create a technical specification for the task that is appropriate for the complexity level:
-- Review the existing codebase architecture and identify reusable components.
-- Define the implementation approach based on established patterns in the project.
-- Identify all source code files that will be created or modified.
-- Define any necessary data model, API, or interface changes.
-- Describe verification steps using the project's test and lint commands.
+**Completed**:
+- ✅ Technical specification created in `spec.md`
+- ✅ Detailed implementation plan created in `implementation-plan.md`
+- ✅ Identified 12 concrete implementation tasks
+- ✅ Defined data model, API, and UI changes
+- ✅ Established verification criteria
 
-Save the output to `{@artifacts_path}/spec.md` with:
-- Technical context (language, dependencies)
-- Implementation approach
-- Source code structure changes
-- Data model / API / interface changes
-- Verification approach
-
-If the task is complex enough, create a detailed implementation plan based on `{@artifacts_path}/spec.md`:
-- Break down the work into concrete tasks (incrementable, testable milestones)
-- Each task should reference relevant contracts and include verification steps
-- Replace the Implementation step below with the planned tasks
-
-Rule of thumb for step size: each step should represent a coherent unit of work (e.g., implement a component, add an API endpoint, write tests for a module). Avoid steps that are too granular (single function).
-
-Save to `{@artifacts_path}/plan.md`. If the feature is trivial and doesn't warrant this breakdown, keep the Implementation step below as is.
+See `spec.md` for full technical details and `implementation-plan.md` for detailed task breakdown.
 
 ---
 
-### [ ] Step: Implementation
+## Implementation Tasks
 
-Implement the task according to the technical specification and general engineering best practices.
+### [ ] Task 1: Setup & Configuration
+Configure platform API credentials (Zoom, Deepgram/AssemblyAI) and update backend configuration.
 
-1. Break the task into steps where possible.
-2. Implement the required changes in the codebase.
-3. Add and run relevant tests and linters.
-4. Perform basic manual verification if applicable.
-5. After completion, write a report to `{@artifacts_path}/report.md` describing:
-   - What was implemented
-   - How the solution was tested
-   - The biggest issues or challenges encountered
+**Files**: `backend/config.py`, `backend/.env.example`
+
+---
+
+### [ ] Task 2: Backend Data Models Update
+Modify storage models for online meetings, word-level timestamps, and structured summaries.
+
+**Files**: `backend/storage.py`
+
+---
+
+### [ ] Task 3: Platform Integration Base
+Create abstract base class for platform integrations.
+
+**Files**: `backend/platform_integrations/base_platform.py` (new)
+
+---
+
+### [ ] Task 4: Zoom Integration
+Implement Zoom OAuth flow, meeting details retrieval, and recording download.
+
+**Files**: `backend/platform_integrations/zoom_integration.py` (new), `backend/app.py`
+
+---
+
+### [ ] Task 5: Enhanced Transcription with Timestamps
+Integrate Deepgram or AssemblyAI for word-level timestamp transcription.
+
+**Files**: `backend/word_timestamp_transcriber.py` (new), `backend/transcriber.py`
+
+---
+
+### [ ] Task 6: Structured Summary Generation
+Enhance summarizer to generate Overview, Action Items, and Outline sections.
+
+**Files**: `backend/summarizer.py`, `backend/app.py`
+
+---
+
+### [ ] Task 7: Audio Player Component
+Create React audio player component with playback controls and sync hooks.
+
+**Files**: `frontend/src/components/AudioPlayer.js` (new), `frontend/src/hooks/useAudioSync.js` (new)
+
+---
+
+### [ ] Task 8: Synchronized Transcript Component
+Create transcript component with real-time highlighting and click-to-seek.
+
+**Files**: `frontend/src/components/SyncedTranscript.js` (new), `frontend/src/utils/transcriptHighlighter.js` (new)
+
+---
+
+### [ ] Task 9: Structured Summary View
+Create summary component with Overview, Action Items, and Outline sections.
+
+**Files**: `frontend/src/components/StructuredSummary.js` (new), `frontend/src/components/ActionItemsList.js` (new), `frontend/src/components/MeetingOutline.js` (new)
+
+---
+
+### [ ] Task 10: Update Meeting Creation Flow
+Add platform selection and file upload to meeting creation.
+
+**Files**: `frontend/src/pages/CreateMeeting.js`
+
+---
+
+### [ ] Task 11: Meeting Detail Redesign
+Complete overhaul with audio player, synced transcript, and structured summary (Otter AI-like layout).
+
+**Files**: `frontend/src/pages/MeetingDetail.js`, `frontend/src/pages/MeetingDetail.css`
+
+---
+
+### [ ] Task 12: Testing & Refinement
+End-to-end testing, bug fixes, performance optimization, and polish.
+
+**Activities**: Upload flow, Zoom flow, playback sync, summary validation, edge cases
+
+---
+
+### [ ] Step: Final Report
+
+After completing all implementation tasks, write a comprehensive report to `{@artifacts_path}/report.md` describing:
+- What was implemented
+- How the solution was tested
+- Key challenges and solutions
+- Known limitations
+- Future enhancements
