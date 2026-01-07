@@ -44,7 +44,8 @@ Configure platform API credentials (Zoom, Deepgram/AssemblyAI) and update backen
 
 ---
 
-### [ ] Task 2: Backend Data Models Update
+### [x] Task 2: Backend Data Models Update
+<!-- chat-id: c6506e62-9afc-4aa4-aa19-a8c76eeb7e42 -->
 Modify storage models for online meetings, word-level timestamps, and structured summaries.
 
 **Files**: `backend/storage.py`
