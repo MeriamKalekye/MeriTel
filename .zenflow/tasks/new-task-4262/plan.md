@@ -85,6 +85,7 @@ Enhance summarizer to generate Overview, Action Items, and Outline sections.
 ---
 
 ### [ ] Task 7: Audio Player Component
+<!-- chat-id: c5abba3d-6369-4341-ab6f-a7ae5eb05a04 -->
 Create React audio player component with playback controls and sync hooks.
 
 **Files**: `frontend/src/components/AudioPlayer.js` (new), `frontend/src/hooks/useAudioSync.js` (new)
