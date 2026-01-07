@@ -60,7 +60,8 @@ Create abstract base class for platform integrations.
 
 ---
 
-### [ ] Task 4: Zoom Integration
+### [x] Task 4: Zoom Integration
+<!-- chat-id: fe7431e1-8f01-45ed-ba1b-d14345425690 -->
 Implement Zoom OAuth flow, meeting details retrieval, and recording download.
 
 **Files**: `backend/platform_integrations/zoom_integration.py` (new), `backend/app.py`
