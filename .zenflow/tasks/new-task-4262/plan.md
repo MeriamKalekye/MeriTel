@@ -76,7 +76,8 @@ Integrate Deepgram or AssemblyAI for word-level timestamp transcription.
 
 ---
 
-### [ ] Task 6: Structured Summary Generation
+### [x] Task 6: Structured Summary Generation
+<!-- chat-id: 87b3a380-f278-4dbb-9e10-40eb576f8980 -->
 Enhance summarizer to generate Overview, Action Items, and Outline sections.
 
 **Files**: `backend/summarizer.py`, `backend/app.py`

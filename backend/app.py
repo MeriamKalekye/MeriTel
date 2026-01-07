@@ -8,11 +8,13 @@ from pathlib import Path
 from config import (
     SECRET_KEY, CORS_ORIGINS, UPLOAD_FOLDER, RECORDINGS_FOLDER,
     ZOOM_CLIENT_ID, ZOOM_CLIENT_SECRET, ZOOM_REDIRECT_URI,
-    DEEPGRAM_API_KEY, ASSEMBLYAI_API_KEY, DEFAULT_TRANSCRIPTION_SERVICE
+    DEEPGRAM_API_KEY, ASSEMBLYAI_API_KEY, DEFAULT_TRANSCRIPTION_SERVICE,
+    OPENAI_API_KEY, DEEPSEEK_API_KEY, DEFAULT_SUMMARIZATION_SERVICE
 )
 from storage import MeetingStorage
 from platform_integrations.zoom_integration import ZoomPlatform
 from word_timestamp_transcriber import WordTimestampTranscriber
+from summarizer import MeetingSummarizer
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = SECRET_KEY
@@ -343,6 +345,58 @@ def transcribe_meeting(meeting_id):
     
     except Exception as e:
         return jsonify({'error': f'Transcription failed: {str(e)}'}), 500
+
+
+@app.route('/api/meetings/<meeting_id>/summarize-structured', methods=['POST'])
+def summarize_structured(meeting_id):
+    meeting = storage.get_meeting(meeting_id)
+    if not meeting:
+        return jsonify({'error': 'Meeting not found'}), 404
+    
+    transcript = storage.get_detailed_transcript(meeting_id)
+    if not transcript or not transcript.get('segments'):
+        return jsonify({'error': 'Transcript not found or empty'}), 404
+    
+    data = request.get_json() or {}
+    service = data.get('service', DEFAULT_SUMMARIZATION_SERVICE)
+    template = data.get('template', 'general')
+    
+    if service == 'openai':
+        api_key = OPENAI_API_KEY
+    elif service == 'deepseek':
+        api_key = DEEPSEEK_API_KEY
+    else:
+        return jsonify({'error': f'Unsupported summarization service: {service}'}), 400
+    
+    if not api_key:
+        return jsonify({'error': f'{service} API key not configured'}), 500
+    
+    try:
+        summarizer = MeetingSummarizer(service=service, api_key=api_key)
+        
+        meeting_title = meeting.get('title', 'Meeting')
+        segments = transcript['segments']
+        
+        summary_data = summarizer.generate_structured_summary(
+            transcript_segments=segments,
+            meeting_title=meeting_title,
+            template=template
+        )
+        
+        summary_data['template'] = template
+        summary_data['meeting_id'] = meeting_id
+        
+        storage.save_structured_summary(meeting_id, summary_data)
+        
+        saved_summary = storage.get_structured_summary(meeting_id)
+        
+        return jsonify({
+            'message': 'Summary generated successfully',
+            'summary': saved_summary
+        }), 200
+    
+    except Exception as e:
+        return jsonify({'error': f'Summarization failed: {str(e)}'}), 500
 
 
 if __name__ == '__main__':
