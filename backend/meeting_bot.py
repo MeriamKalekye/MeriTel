@@ -116,86 +116,77 @@ class MeetingBot:
     
     async def _join_google_meet(self):
         await self.page.goto(self.meeting_url)
+        print(f"Navigated to: {self.meeting_url}")
         
-        await asyncio.sleep(5)
+        await asyncio.sleep(3)
         
         try:
-            name_input = await self.page.wait_for_selector('input[aria-label="Your name"]', timeout=10000)
+            name_input = await self.page.wait_for_selector('input[placeholder*="name" i]', timeout=5000)
             await name_input.fill(self.bot_name)
             print(f"Filled name: {self.bot_name}")
         except Exception as e:
             print(f"Could not fill name: {e}")
         
-        await asyncio.sleep(1)
-        
         try:
-            mic_button = await self.page.query_selector('div[data-tooltip*="microphone" i], button[aria-label*="microphone" i]')
-            if mic_button:
-                await mic_button.click()
-                print("Toggled microphone")
+            turn_off_mic = await self.page.query_selector('[aria-label*="microphone" i]')
+            if turn_off_mic:
+                mic_state = await turn_off_mic.get_attribute('data-is-muted')
+                if mic_state != 'true':
+                    await turn_off_mic.click()
+                    print("Turned off microphone")
         except Exception as e:
             print(f"Could not toggle mic: {e}")
         
         try:
-            camera_button = await self.page.query_selector('div[data-tooltip*="camera" i], button[aria-label*="camera" i]')
-            if camera_button:
-                await camera_button.click()
-                print("Toggled camera")
+            turn_off_camera = await self.page.query_selector('[aria-label*="camera" i]')
+            if turn_off_camera:
+                camera_state = await turn_off_camera.get_attribute('data-is-muted')
+                if camera_state != 'true':
+                    await turn_off_camera.click()
+                    print("Turned off camera")
         except Exception as e:
             print(f"Could not toggle camera: {e}")
         
         await asyncio.sleep(2)
         
-        join_clicked = False
-        join_selectors = [
-            'button span:has-text("Ask to join")',
-            'button span:has-text("Join now")',
-            'button:has-text("Ask to join")',
-            'button:has-text("Join now")',
-            'div[role="button"]:has-text("Ask to join")',
-            'div[role="button"]:has-text("Join now")'
-        ]
-        
-        for selector in join_selectors:
+        try:
+            join_button = await self.page.wait_for_selector('button:has-text("Ask to join")', timeout=5000)
+            await join_button.click()
+            print("Clicked 'Ask to join' button")
+        except:
             try:
-                join_button = await self.page.wait_for_selector(selector, timeout=3000)
+                join_button = await self.page.wait_for_selector('button:has-text("Join now")', timeout=5000)
                 await join_button.click()
-                print(f"Clicked join button with selector: {selector}")
-                join_clicked = True
-                break
-            except:
-                continue
+                print("Clicked 'Join now' button")
+            except Exception as e:
+                print(f"Could not find join button: {e}")
         
-        if not join_clicked:
-            print("WARNING: Could not find join button - trying to proceed anyway")
-        
-        await asyncio.sleep(5)
+        await asyncio.sleep(3)
     
     async def _join_zoom(self):
         await self.page.goto(self.meeting_url)
+        print(f"Navigated to: {self.meeting_url}")
         
-        await asyncio.sleep(5)
+        await asyncio.sleep(3)
         
         try:
-            launch_meeting = await self.page.wait_for_selector('a[href*="zoomwebclient"], a:has-text("Join from Your Browser")', timeout=10000)
+            launch_meeting = await self.page.wait_for_selector('a[href*="zoomwebclient"]', timeout=10000)
             await launch_meeting.click()
             print("Clicked launch meeting in browser")
         except Exception as e:
             print(f"Could not launch browser meeting: {e}")
         
-        await asyncio.sleep(5)
+        await asyncio.sleep(3)
         
         try:
-            name_input = await self.page.wait_for_selector('input#input-for-name, input[placeholder*="name" i]', timeout=10000)
+            name_input = await self.page.wait_for_selector('input#input-for-name', timeout=5000)
             await name_input.fill(self.bot_name)
             print(f"Filled name: {self.bot_name}")
         except Exception as e:
             print(f"Could not fill name: {e}")
         
-        await asyncio.sleep(1)
-        
         try:
-            join_button = await self.page.wait_for_selector('button:has-text("Join"), button[type="submit"]', timeout=10000)
+            join_button = await self.page.wait_for_selector('button:has-text("Join")', timeout=5000)
             await join_button.click()
             print("Clicked join button")
         except Exception as e:
@@ -204,9 +195,9 @@ class MeetingBot:
         await asyncio.sleep(5)
         
         try:
-            join_audio = await self.page.wait_for_selector('button:has-text("Join Audio"), button:has-text("Join with Computer Audio")', timeout=10000)
+            join_audio = await self.page.wait_for_selector('button:has-text("Join Audio by Computer")', timeout=5000)
             await join_audio.click()
-            print("Clicked join audio")
+            print("Clicked join audio button")
         except Exception as e:
             print(f"Could not join audio: {e}")
     
