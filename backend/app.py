@@ -336,11 +336,19 @@ def transcribe_meeting(meeting_id):
         print(f"Transcription completed: {len(result.get('segments', []))} segments")
         
         participants = meeting.get('participants', [])
-        if participants:
-            result['segments'] = transcriber.map_speakers_to_participants(
-                result['segments'],
-                participants
-            )
+        if participants and isinstance(participants, list) and len(participants) > 0:
+            participant_dicts = []
+            for i, p in enumerate(participants):
+                if isinstance(p, str):
+                    participant_dicts.append({'id': f'participant_{i}', 'name': p})
+                elif isinstance(p, dict):
+                    participant_dicts.append(p)
+            
+            if participant_dicts:
+                result['segments'] = transcriber.map_speakers_to_participants(
+                    result['segments'],
+                    participant_dicts
+                )
         
         transcript_data = {
             'segments': result['segments'],
