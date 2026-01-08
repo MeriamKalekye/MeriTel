@@ -178,38 +178,8 @@ class MeetingBot:
             }
         """)
     
-    async def stop(self):
+    def stop(self):
         self.is_running = False
-        
-        if self.page:
-            try:
-                audio_data = await self.page.evaluate("""
-                    () => {
-                        return new Promise((resolve) => {
-                            if (window.mediaRecorder) {
-                                window.mediaRecorder.onstop = () => {
-                                    const blob = new Blob(window.audioChunks, { type: 'audio/webm' });
-                                    const reader = new FileReader();
-                                    reader.onloadend = () => {
-                                        resolve(reader.result);
-                                    };
-                                    reader.readAsDataURL(blob);
-                                };
-                                window.mediaRecorder.stop();
-                            } else {
-                                resolve(null);
-                            }
-                        });
-                    }
-                """)
-                
-                if audio_data:
-                    import base64
-                    audio_bytes = base64.b64decode(audio_data.split(',')[1])
-                    with open(self.recording_path, 'wb') as f:
-                        f.write(audio_bytes)
-            except Exception as e:
-                print(f"Error saving audio: {e}")
     
     async def _save_recording(self):
         pass
@@ -239,12 +209,16 @@ class BotManager:
         
         return True
     
-    async def stop_bot(self, meeting_id: str) -> Optional[str]:
+    def stop_bot(self, meeting_id: str) -> Optional[str]:
         if meeting_id not in self.active_bots:
             return None
         
         bot = self.active_bots[meeting_id]
-        await bot.stop()
+        bot.stop()
+        
+        thread = self.bot_threads.get(meeting_id)
+        if thread and thread.is_alive():
+            thread.join(timeout=10)
         
         recording_path = bot.get_recording_path()
         

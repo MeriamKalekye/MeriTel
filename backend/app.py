@@ -3,7 +3,6 @@ from flask_cors import CORS
 from flask_socketio import SocketIO, emit, join_room, leave_room
 import os
 import uuid
-import asyncio
 from datetime import datetime, timedelta
 from pathlib import Path
 
@@ -438,9 +437,9 @@ def start_bot():
 
 
 @app.route('/api/bots/<meeting_id>/stop', methods=['POST'])
-async def stop_bot(meeting_id):
+def stop_bot(meeting_id):
     try:
-        recording_path = await bot_manager.stop_bot(meeting_id)
+        recording_path = bot_manager.stop_bot(meeting_id)
         
         if recording_path:
             storage.update_meeting(meeting_id, {
