@@ -37,17 +37,16 @@ class MeetingBot:
                 args=[
                     '--disable-blink-features=AutomationControlled',
                     '--autoplay-policy=no-user-gesture-required',
-                    '--auto-select-desktop-capture-source=Entire screen',
-                    '--enable-usermedia-screen-capturing',
-                    '--allow-running-insecure-content',
-                    '--disable-web-security',
-                    '--use-fake-ui-for-media-stream'
+                    '--use-fake-ui-for-media-stream',
+                    '--use-fake-device-for-media-stream',
                 ]
             )
             
             context = await self.browser.new_context(
-                permissions=['microphone', 'camera', 'display-capture'],
-                viewport={'width': 1280, 'height': 720}
+                permissions=['microphone', 'camera'],
+                viewport={'width': 1280, 'height': 720},
+                record_video_dir=str(recording_dir),
+                record_video_size={'width': 1280, 'height': 720}
             )
             
             self.page = await context.new_page()
@@ -59,48 +58,41 @@ class MeetingBot:
             else:
                 raise ValueError(f"Unsupported meeting platform: {self.meeting_url}")
             
-            await asyncio.sleep(5)
-            await self._start_audio_recording()
+            print("Bot successfully joined meeting, now recording...")
             
             while self.is_running:
                 await asyncio.sleep(1)
             
             try:
-                audio_data = await self.page.evaluate("""
-                    () => {
-                        return new Promise((resolve) => {
-                            if (window.mediaRecorder && window.mediaRecorder.state !== 'inactive') {
-                                window.mediaRecorder.onstop = () => {
-                                    if (window.audioChunks.length > 0) {
-                                        const blob = new Blob(window.audioChunks, { type: 'audio/webm' });
-                                        const reader = new FileReader();
-                                        reader.onloadend = () => {
-                                            resolve(reader.result);
-                                        };
-                                        reader.readAsDataURL(blob);
-                                    } else {
-                                        resolve(null);
-                                    }
-                                };
-                                window.mediaRecorder.stop();
-                            } else {
-                                resolve(null);
-                            }
-                        });
-                    }
-                """)
-                
-                if audio_data:
-                    audio_bytes = base64.b64decode(audio_data.split(',')[1])
-                    with open(self.recording_path, 'wb') as f:
-                        f.write(audio_bytes)
-                    print(f"Audio recording saved to: {self.recording_path}")
-                else:
-                    print("No audio data captured")
+                print("Stopping recording...")
+                video_path = await self.page.video.path()
                 
                 await self.page.close()
                 await context.close()
                 await self.browser.close()
+                
+                if video_path and os.path.exists(video_path):
+                    import subprocess
+                    audio_output = str(self.recording_path)
+                    
+                    result = subprocess.run([
+                        'ffmpeg', '-i', video_path,
+                        '-vn', '-acodec', 'libopus',
+                        '-ar', '16000', '-ac', '1',
+                        audio_output
+                    ], capture_output=True, text=True)
+                    
+                    if result.returncode == 0:
+                        print(f"Audio extracted to: {audio_output}")
+                    else:
+                        print(f"FFmpeg error: {result.stderr}")
+                    
+                    try:
+                        os.remove(video_path)
+                    except:
+                        pass
+                else:
+                    print("No video recording found")
                 
             except Exception as e:
                 print(f"Error saving recording: {e}")
@@ -201,50 +193,7 @@ class MeetingBot:
         except Exception as e:
             print(f"Could not join audio: {e}")
     
-    async def _start_audio_recording(self):
-        try:
-            result = await self.page.evaluate("""
-                async () => {
-                    window.audioChunks = [];
-                    try {
-                        const audioElements = document.querySelectorAll('audio, video');
-                        if (audioElements.length === 0) {
-                            return { success: false, error: 'No audio elements found' };
-                        }
-                        
-                        const audioContext = new AudioContext({ sampleRate: 16000 });
-                        const destination = audioContext.createMediaStreamDestination();
-                        
-                        audioElements.forEach(element => {
-                            const source = audioContext.createMediaElementSource(element);
-                            source.connect(destination);
-                            source.connect(audioContext.destination);
-                        });
-                        
-                        const mediaRecorder = new MediaRecorder(destination.stream, {
-                            mimeType: 'audio/webm;codecs=opus',
-                            audioBitsPerSecond: 128000
-                        });
-                        
-                        mediaRecorder.ondataavailable = (event) => {
-                            if (event.data.size > 0) {
-                                window.audioChunks.push(event.data);
-                            }
-                        };
-                        
-                        window.mediaRecorder = mediaRecorder;
-                        window.audioContext = audioContext;
-                        mediaRecorder.start(1000);
-                        
-                        return { success: true, message: 'Recording started' };
-                    } catch (err) {
-                        return { success: false, error: err.toString() };
-                    }
-                }
-            """)
-            print(f"Audio recording initialized: {result}")
-        except Exception as e:
-            print(f"Failed to start audio recording: {e}")
+
     
     def stop(self):
         self.is_running = False
