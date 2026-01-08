@@ -55,18 +55,18 @@ class MeetingBot:
             else:
                 raise ValueError(f"Unsupported meeting platform: {self.meeting_url}")
             
-            print("Bot joined meeting. Waiting in meeting...")
-            await asyncio.sleep(10)
+            print("Bot joined meeting, starting audio capture...")
+            await asyncio.sleep(5)
             
-            dummy_audio = b'UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA='
-            with open(self.recording_path, 'wb') as f:
-                f.write(base64.b64decode(dummy_audio))
-            print(f"Placeholder audio created: {self.recording_path}")
+            await self._start_audio_capture()
             
             while self.is_running:
                 await asyncio.sleep(1)
             
             try:
+                print("Stopping audio capture...")
+                await self._stop_audio_capture()
+                
                 print("Leaving meeting...")
                 await self.page.close()
                 await context.close()
@@ -171,7 +171,84 @@ class MeetingBot:
         except Exception as e:
             print(f"Could not join audio: {e}")
     
-
+    async def _start_audio_capture(self):
+        try:
+            cdp = await self.page.context.new_cdp_session(self.page)
+            
+            await cdp.send('Page.enable')
+            await cdp.send('Page.setWebLifecycleState', {'state': 'active'})
+            
+            result = await self.page.evaluate("""
+                async () => {
+                    try {
+                        const stream = await navigator.mediaDevices.getUserMedia({ 
+                            audio: {
+                                echoCancellation: false,
+                                noiseSuppression: false,
+                                autoGainControl: false
+                            } 
+                        });
+                        
+                        window.audioRecorder = new MediaRecorder(stream, {
+                            mimeType: 'audio/webm;codecs=opus'
+                        });
+                        
+                        window.audioChunks = [];
+                        window.audioRecorder.ondataavailable = (e) => {
+                            if (e.data.size > 0) {
+                                window.audioChunks.push(e.data);
+                            }
+                        };
+                        
+                        window.audioRecorder.start(1000);
+                        return { success: true, message: 'Recording started' };
+                    } catch (err) {
+                        return { success: false, error: err.toString() };
+                    }
+                }
+            """)
+            print(f"Audio capture started: {result}")
+            
+        except Exception as e:
+            print(f"Failed to start audio capture: {e}")
+    
+    async def _stop_audio_capture(self):
+        try:
+            audio_data = await self.page.evaluate("""
+                () => {
+                    return new Promise((resolve) => {
+                        if (window.audioRecorder && window.audioRecorder.state !== 'inactive') {
+                            window.audioRecorder.onstop = () => {
+                                if (window.audioChunks && window.audioChunks.length > 0) {
+                                    const blob = new Blob(window.audioChunks, { type: 'audio/webm' });
+                                    const reader = new FileReader();
+                                    reader.onloadend = () => resolve(reader.result);
+                                    reader.readAsDataURL(blob);
+                                } else {
+                                    resolve(null);
+                                }
+                            };
+                            window.audioRecorder.stop();
+                            if (window.audioRecorder.stream) {
+                                window.audioRecorder.stream.getTracks().forEach(track => track.stop());
+                            }
+                        } else {
+                            resolve(null);
+                        }
+                    });
+                }
+            """)
+            
+            if audio_data:
+                audio_bytes = base64.b64decode(audio_data.split(',')[1])
+                with open(self.recording_path, 'wb') as f:
+                    f.write(audio_bytes)
+                print(f"Audio saved: {self.recording_path} ({len(audio_bytes)} bytes)")
+            else:
+                print("No audio data captured")
+                
+        except Exception as e:
+            print(f"Error stopping audio capture: {e}")
     
     def stop(self):
         self.is_running = False
