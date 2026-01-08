@@ -66,8 +66,7 @@ class MeetingBot:
                     self.storage.update_meeting(self.meeting_id, {'participants': participants})
                     print(f"Added {self.bot_name} to participants list")
             
-            print("Waiting for meeting audio to stabilize...")
-            await asyncio.sleep(8)
+            await asyncio.sleep(5)
             
             await self._start_audio_capture()
             
@@ -187,28 +186,23 @@ class MeetingBot:
     
     async def _start_audio_capture(self):
         try:
+            cdp = await self.page.context.new_cdp_session(self.page)
+            
+            await cdp.send('Page.enable')
+            await cdp.send('Page.setWebLifecycleState', {'state': 'active'})
+            
             result = await self.page.evaluate("""
                 async () => {
                     try {
-                        const audioElements = document.querySelectorAll('audio, video');
-                        if (audioElements.length === 0) {
-                            return { success: false, error: 'No audio/video elements found' };
-                        }
-                        
-                        const audioContext = new AudioContext({ sampleRate: 16000 });
-                        const destination = audioContext.createMediaStreamDestination();
-                        
-                        audioElements.forEach(element => {
-                            try {
-                                const source = audioContext.createMediaElementSource(element);
-                                source.connect(destination);
-                                source.connect(audioContext.destination);
-                            } catch (e) {
-                                console.log('Could not connect element:', e);
-                            }
+                        const stream = await navigator.mediaDevices.getUserMedia({ 
+                            audio: {
+                                echoCancellation: false,
+                                noiseSuppression: false,
+                                autoGainControl: false
+                            } 
                         });
                         
-                        window.audioRecorder = new MediaRecorder(destination.stream, {
+                        window.audioRecorder = new MediaRecorder(stream, {
                             mimeType: 'audio/webm;codecs=opus'
                         });
                         
@@ -220,13 +214,13 @@ class MeetingBot:
                         };
                         
                         window.audioRecorder.start(1000);
-                        return { success: true, message: 'Recording meeting audio', elements: audioElements.length };
+                        return { success: true, message: 'Recording started' };
                     } catch (err) {
                         return { success: false, error: err.toString() };
                     }
                 }
             """)
-            print(f"Audio capture result: {result}")
+            print(f"Audio capture started: {result}")
             
         except Exception as e:
             print(f"Failed to start audio capture: {e}")
