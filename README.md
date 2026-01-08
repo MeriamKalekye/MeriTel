@@ -1,183 +1,122 @@
-# MeriTel - Online Meeting Transcription Platform
+# MeriTel - AI-Powered Meeting Bot Platform
 
-Transform your online meetings into searchable transcripts with AI-powered summaries, action items, and meeting outlines.
+An Otter.ai-like meeting bot that joins Google Meet/Zoom meetings, records conversations, generates AI transcripts with speaker diarization, and creates structured summaries.
 
 ## Features
 
-- **Platform Integration**: Import recordings from Zoom, Google Meet, or upload directly
-- **Word-Level Timestamps**: Precise transcription with word-by-word timing
-- **Speaker Diarization**: Automatic speaker identification and labeling
-- **Synchronized Playback**: Audio player synced with transcript highlighting
-- **AI-Powered Summaries**: 
-  - Overview (2-3 paragraph summary)
-  - Action Items (with assignees and deadlines)
-  - Meeting Outline (topic-based breakdown)
-- **Otter AI-like Interface**: Clean, intuitive UI with bottom audio player
+- 🤖 **Live Meeting Bot**: Automated bot joins Google Meet/Zoom as a participant
+- 🎙️ **Real-time Recording**: Captures meeting audio automatically
+- 📝 **AI Transcription**: Word-level timestamps and speaker diarization (AssemblyAI/Deepgram)
+- 🧠 **Smart Summaries**: AI-generated meeting summaries with:
+  - Overview
+  - Action Items
+  - Structured Outline
+- 🎯 **Multi-platform**: Supports Google Meet, Zoom, Microsoft Teams
+- 📊 **Meeting Dashboard**: View all recordings, transcripts, and summaries
 
-## Quick Start
+## Tech Stack
+
+### Backend
+- **Flask** - REST API server
+- **Flask-SocketIO** - Real-time WebSocket communication
+- **Playwright** - Browser automation for bot joining
+- **AssemblyAI** - Speech-to-text with speaker diarization
+- **DeepSeek** - AI-powered meeting summarization
+- **Pydub + Noisereduce** - Audio processing and echo reduction
+
+### Frontend
+- **React** - User interface
+- **React Router** - Navigation
+- **Axios** - API communication
+- **Socket.io-client** - Real-time updates
+
+## Installation
+
+### Prerequisites
+- Python 3.8+
+- Node.js 16+
+- FFmpeg (for audio processing)
 
 ### Backend Setup
 
-1. Navigate to backend directory:
 ```bash
 cd backend
-```
-
-2. Install dependencies:
-```bash
 pip install -r requirements.txt
-```
+playwright install chromium
 
-3. Create `.env` file from example:
-```bash
+# Configure API keys
 cp .env.example .env
-```
+# Edit .env with your API keys:
+# - ASSEMBLYAI_API_KEY
+# - DEEPSEEK_API_KEY
 
-4. Add your API keys to `.env`:
-```
-DEEPGRAM_API_KEY=your_deepgram_key
-OPENAI_API_KEY=your_openai_key
-ZOOM_CLIENT_ID=your_zoom_client_id
-ZOOM_CLIENT_SECRET=your_zoom_client_secret
-```
-
-5. Run the backend:
-```bash
 python app.py
 ```
 
-Backend runs on `http://localhost:5000`
-
 ### Frontend Setup
 
-1. Navigate to frontend directory:
 ```bash
 cd frontend
-```
-
-2. Install dependencies:
-```bash
 npm install
-```
-
-3. Start the development server:
-```bash
 npm start
 ```
 
-Frontend runs on `http://localhost:3000`
+## Configuration
+
+Edit `backend/.env`:
+
+```env
+ASSEMBLYAI_API_KEY=your_assemblyai_key
+DEEPSEEK_API_KEY=your_deepseek_key
+DEFAULT_TRANSCRIPTION_SERVICE=assemblyai
+DEFAULT_SUMMARIZATION_SERVICE=deepseek
+```
 
 ## Usage
 
-### Creating a Meeting
+1. **Start a Meeting Bot**:
+   - Click "Join Live Meeting"
+   - Enter meeting URL (Google Meet/Zoom)
+   - Bot joins automatically and starts recording
 
-1. Open `http://localhost:3000`
-2. Enter meeting title and description
-3. Choose source:
-   - **Upload Recording**: Select audio/video file from your computer
-   - **Import from Zoom**: Connect your Zoom account and import
-4. Click "Create Meeting"
+2. **Stop Recording**:
+   - Click "Stop Recording" when meeting ends
+   - Audio is saved and ready for transcription
 
-### Viewing Transcripts
+3. **Transcribe**:
+   - Click "Transcribe Meeting"
+   - Wait for AI transcription with speaker labels
 
-1. The meeting detail page opens automatically
-2. Click "Transcribe Meeting" to generate transcript
-3. Transcript appears with speaker labels and timestamps
-4. Click any part of the transcript to jump to that point in the audio
+4. **Generate Summary**:
+   - Click "Generate Summary"
+   - AI creates structured meeting notes
 
-### Generating Summaries
+## API Keys
 
-1. After transcription completes, click "Generate Summary"
-2. View the structured summary with:
-   - **Overview**: High-level meeting summary
-   - **Action Items**: Checkable tasks with assignees
-   - **Outline**: Topic-based breakdown with timestamps
-3. Toggle between "Transcript" and "Summary" views
+Get your API keys:
+- **AssemblyAI**: https://www.assemblyai.com/
+- **DeepSeek**: https://platform.deepseek.com/
 
-### Audio Playback
+## Known Limitations
 
-- Use the player at the bottom to play/pause
-- Seek through the recording
-- Current word in transcript is highlighted
-- Click transcript segments to seek audio
+- Browser automation has echo issues (bot hears itself)
+- Speaker identification based on voice patterns, not names
+- Requires FFmpeg for audio processing
+- Google Meet may require user approval for bot to join
 
-## Architecture
+## Future Enhancements
 
-### Backend (Python/Flask)
-
-- `app.py`: Main Flask application with API endpoints
-- `config.py`: Configuration management
-- `storage.py`: File-based meeting/transcript/summary storage
-- `word_timestamp_transcriber.py`: Deepgram/AssemblyAI integration
-- `summarizer.py`: OpenAI/DeepSeek summary generation
-- `platform_integrations/`: Zoom, Meet, Teams integration modules
-
-### Frontend (React)
-
-- `pages/CreateMeeting.js`: Meeting creation with file upload
-- `pages/MeetingDetail.js`: Main meeting view (Otter AI-like)
-- `components/AudioPlayer.js`: Synchronized audio player
-- `components/SyncedTranscript.js`: Real-time transcript highlighting
-- `components/StructuredSummary.js`: Three-section summary display
-- `components/ActionItemsList.js`: Interactive action items
-- `components/MeetingOutline.js`: Expandable meeting outline
-
-## API Endpoints
-
-### Meetings
-
-- `POST /api/meetings` - Create new meeting
-- `GET /api/meetings` - List all meetings
-- `GET /api/meetings/{id}` - Get meeting details
-- `PATCH /api/meetings/{id}` - Update meeting
-- `DELETE /api/meetings/{id}` - Delete meeting
-
-### Recording & Processing
-
-- `POST /api/meetings/{id}/upload` - Upload audio/video file
-- `POST /api/meetings/{id}/transcribe` - Transcribe recording
-- `POST /api/meetings/{id}/summarize` - Generate summary
-- `GET /api/meetings/{id}/audio` - Stream audio file
-
-### Transcripts & Summaries
-
-- `GET /api/meetings/{id}/transcript` - Get detailed transcript
-- `GET /api/meetings/{id}/summary` - Get structured summary
-- `PATCH /api/meetings/{id}/summary` - Update action items
-
-### Platform Integration
-
-- `GET /api/auth/zoom` - Initiate Zoom OAuth
-- `GET /api/auth/zoom/callback` - Zoom OAuth callback
-- `POST /api/meetings/import-zoom` - Import Zoom recording
-
-## Technology Stack
-
-**Backend:**
-- Flask (Web framework)
-- Deepgram/AssemblyAI (Transcription)
-- OpenAI/DeepSeek (Summarization)
-- Zoom SDK (Platform integration)
-
-**Frontend:**
-- React 18
-- React Router 6
-- Axios
-- HTML5 Audio API
-
-## Requirements
-
-- Python 3.8+
-- Node.js 16+
-- API keys for:
-  - Deepgram or AssemblyAI (transcription)
-  - OpenAI or DeepSeek (summarization)
-  - Zoom (optional, for Zoom integration)
+- Google Meet API integration (requires Workspace)
+- Zoom Cloud Recording API
+- Advanced echo cancellation
+- Calendar integration
+- Real-time transcription during meetings
+- Custom vocabulary for better accuracy
 
 ## License
 
-Private project
+MIT
 
-## Support
+## Contributing
 
-For issues or questions, please contact the development team.
+Pull requests welcome!
