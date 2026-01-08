@@ -56,7 +56,7 @@ class MeetingBot:
             else:
                 raise ValueError(f"Unsupported meeting platform: {self.meeting_url}")
             
-            print("Bot joined meeting, starting audio capture...")
+            print("Bot joined meeting successfully")
             
             if self.storage:
                 meeting = self.storage.get_meeting(self.meeting_id)
@@ -66,7 +66,8 @@ class MeetingBot:
                     self.storage.update_meeting(self.meeting_id, {'participants': participants})
                     print(f"Added {self.bot_name} to participants list")
             
-            await asyncio.sleep(5)
+            print("Waiting for meeting audio to stabilize...")
+            await asyncio.sleep(8)
             
             await self._start_audio_capture()
             

@@ -17,6 +17,7 @@ from platform_integrations.zoom_integration import ZoomPlatform
 from word_timestamp_transcriber import WordTimestampTranscriber
 from summarizer import MeetingSummarizer
 from meeting_bot import BotManager
+from audio_processor import AudioProcessor
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = SECRET_KEY
@@ -29,6 +30,7 @@ socketio = SocketIO(app, cors_allowed_origins=CORS_ORIGINS)
 
 storage = MeetingStorage(data_dir='data')
 bot_manager = BotManager(storage=storage)
+audio_processor = AudioProcessor()
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(RECORDINGS_FOLDER, exist_ok=True)
@@ -514,18 +516,40 @@ def stop_bot(meeting_id):
     try:
         recording_path = bot_manager.stop_bot(meeting_id)
         
-        if recording_path:
+        if recording_path and os.path.exists(recording_path):
+            print(f"Processing recorded audio: {recording_path}")
+            
+            try:
+                processed_path = recording_path.replace('.webm', '_processed.webm')
+                audio_processor.process_meeting_audio(recording_path, processed_path)
+                
+                if os.path.exists(processed_path):
+                    try:
+                        os.remove(recording_path)
+                    except:
+                        pass
+                    final_path = recording_path
+                    os.rename(processed_path, final_path)
+                    print(f"Audio processing complete: {final_path}")
+                else:
+                    final_path = recording_path
+                    print("Audio processing skipped, using original")
+            except Exception as e:
+                print(f"Audio processing failed: {e}, using original recording")
+                final_path = recording_path
+            
             storage.update_meeting(meeting_id, {
                 'status': 'recorded',
-                'audio_file_path': recording_path
+                'audio_file_path': final_path
             })
         else:
             storage.update_meeting(meeting_id, {'status': 'completed'})
+            final_path = None
         
         return jsonify({
             'message': 'Bot stopped successfully',
             'meeting_id': meeting_id,
-            'recording_path': recording_path
+            'recording_path': final_path
         }), 200
     
     except Exception as e:
