@@ -26,6 +26,10 @@ class MeetingBot:
         self.is_running = True
         self.start_time = datetime.utcnow()
         
+        recording_dir = Path('data/recordings')
+        recording_dir.mkdir(parents=True, exist_ok=True)
+        self.recording_path = recording_dir / f"{self.meeting_id}_{int(time.time())}.webm"
+        
         async with async_playwright() as playwright:
             self.browser = await playwright.chromium.launch(
                 headless=False,
@@ -39,7 +43,9 @@ class MeetingBot:
             
             context = await self.browser.new_context(
                 permissions=['microphone', 'camera'],
-                viewport={'width': 1280, 'height': 720}
+                viewport={'width': 1280, 'height': 720},
+                record_video_dir=str(recording_dir),
+                record_video_size={'width': 1280, 'height': 720}
             )
             
             self.page = await context.new_page()
@@ -54,8 +60,16 @@ class MeetingBot:
             while self.is_running:
                 await asyncio.sleep(1)
             
-            await self._save_recording()
+            video_path = await self.page.video.path()
+            
+            await self.page.close()
+            await context.close()
             await self.browser.close()
+            
+            if video_path and os.path.exists(video_path):
+                import shutil
+                shutil.move(video_path, str(self.recording_path))
+                print(f"Recording saved to: {self.recording_path}")
     
     async def _join_google_meet(self):
         await self.page.goto(self.meeting_url)
@@ -99,8 +113,6 @@ class MeetingBot:
                 pass
         
         await asyncio.sleep(3)
-        
-        await self._start_audio_capture()
     
     async def _join_zoom(self):
         await self.page.goto(self.meeting_url)
