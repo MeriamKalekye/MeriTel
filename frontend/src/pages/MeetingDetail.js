@@ -61,7 +61,11 @@ const MeetingDetail = () => {
       setIsProcessing(true);
       setError('');
 
-      const response = await axios.post(`${API_BASE_URL}/api/meetings/${meetingId}/transcribe`);
+      const response = await axios.post(
+        `${API_BASE_URL}/api/meetings/${meetingId}/transcribe`,
+        {},
+        { headers: { 'Content-Type': 'application/json' } }
+      );
       setTranscript(response.data.transcript);
       await loadMeetingData();
     } catch (err) {
@@ -77,7 +81,11 @@ const MeetingDetail = () => {
       setIsProcessing(true);
       setError('');
 
-      const response = await axios.post(`${API_BASE_URL}/api/meetings/${meetingId}/summarize`);
+      const response = await axios.post(
+        `${API_BASE_URL}/api/meetings/${meetingId}/summarize`,
+        {},
+        { headers: { 'Content-Type': 'application/json' } }
+      );
       setSummary(response.data.summary);
     } catch (err) {
       console.error('Error generating summary:', err);
