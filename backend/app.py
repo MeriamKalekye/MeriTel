@@ -28,7 +28,7 @@ CORS(app, resources={r"/api/*": {"origins": CORS_ORIGINS}}, supports_credentials
 socketio = SocketIO(app, cors_allowed_origins=CORS_ORIGINS)
 
 storage = MeetingStorage(data_dir='data')
-bot_manager = BotManager()
+bot_manager = BotManager(storage=storage)
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(RECORDINGS_FOLDER, exist_ok=True)
@@ -354,6 +354,58 @@ def transcribe_meeting(meeting_id):
     
     except Exception as e:
         return jsonify({'error': f'Transcription failed: {str(e)}'}), 500
+
+
+@app.route('/api/meetings/<meeting_id>/summarize', methods=['POST'])
+def summarize_meeting(meeting_id):
+    meeting = storage.get_meeting(meeting_id)
+    if not meeting:
+        return jsonify({'error': 'Meeting not found'}), 404
+    
+    transcript = storage.get_detailed_transcript(meeting_id)
+    if not transcript or not transcript.get('segments'):
+        return jsonify({'error': 'Transcript not found or empty'}), 404
+    
+    data = request.get_json() or {}
+    service = data.get('service', DEFAULT_SUMMARIZATION_SERVICE)
+    template = data.get('template', 'general')
+    
+    if service == 'openai':
+        api_key = OPENAI_API_KEY
+    elif service == 'deepseek':
+        api_key = DEEPSEEK_API_KEY
+    else:
+        return jsonify({'error': f'Unsupported summarization service: {service}'}), 400
+    
+    if not api_key:
+        return jsonify({'error': f'{service} API key not configured'}), 500
+    
+    try:
+        summarizer = MeetingSummarizer(service=service, api_key=api_key)
+        
+        meeting_title = meeting.get('title', 'Meeting')
+        segments = transcript['segments']
+        
+        summary_data = summarizer.generate_structured_summary(
+            transcript_segments=segments,
+            meeting_title=meeting_title,
+            template=template
+        )
+        
+        summary_data['template'] = template
+        summary_data['meeting_id'] = meeting_id
+        
+        storage.save_structured_summary(meeting_id, summary_data)
+        
+        saved_summary = storage.get_structured_summary(meeting_id)
+        
+        return jsonify({
+            'message': 'Summary generated successfully',
+            'summary': saved_summary
+        }), 200
+    
+    except Exception as e:
+        return jsonify({'error': f'Summarization failed: {str(e)}'}), 500
 
 
 @app.route('/api/meetings/<meeting_id>/summarize-structured', methods=['POST'])

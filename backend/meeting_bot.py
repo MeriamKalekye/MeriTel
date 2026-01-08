@@ -11,7 +11,7 @@ from playwright.async_api import async_playwright, Page, Browser
 
 
 class MeetingBot:
-    def __init__(self, meeting_id: str, meeting_url: str, bot_name: str = "MeriTel Bot"):
+    def __init__(self, meeting_id: str, meeting_url: str, bot_name: str = "MeriTel Bot", storage=None):
         self.meeting_id = meeting_id
         self.meeting_url = meeting_url
         self.bot_name = bot_name
@@ -21,6 +21,7 @@ class MeetingBot:
         self.audio_chunks = []
         self.recording_path = None
         self.start_time = None
+        self.storage = storage
         
     async def start(self, on_transcript_update=None):
         self.is_running = True
@@ -56,6 +57,15 @@ class MeetingBot:
                 raise ValueError(f"Unsupported meeting platform: {self.meeting_url}")
             
             print("Bot joined meeting, starting audio capture...")
+            
+            if self.storage:
+                meeting = self.storage.get_meeting(self.meeting_id)
+                participants = meeting.get('participants', [])
+                if self.bot_name not in participants:
+                    participants.append(self.bot_name)
+                    self.storage.update_meeting(self.meeting_id, {'participants': participants})
+                    print(f"Added {self.bot_name} to participants list")
+            
             await asyncio.sleep(5)
             
             await self._start_audio_capture()
@@ -258,15 +268,16 @@ class MeetingBot:
 
 
 class BotManager:
-    def __init__(self):
+    def __init__(self, storage=None):
         self.active_bots: Dict[str, MeetingBot] = {}
         self.bot_threads: Dict[str, threading.Thread] = {}
+        self.storage = storage
     
     def start_bot(self, meeting_id: str, meeting_url: str, bot_name: str = "MeriTel Bot") -> bool:
         if meeting_id in self.active_bots:
             return False
         
-        bot = MeetingBot(meeting_id, meeting_url, bot_name)
+        bot = MeetingBot(meeting_id, meeting_url, bot_name, storage=self.storage)
         self.active_bots[meeting_id] = bot
         
         def run_bot():
