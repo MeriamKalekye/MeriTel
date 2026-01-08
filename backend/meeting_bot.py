@@ -3,6 +3,7 @@ import os
 import shutil
 import threading
 import time
+import base64
 from datetime import datetime
 from pathlib import Path
 from typing import Optional, Dict, Any
@@ -24,6 +25,7 @@ class MeetingBot:
     async def start(self, on_transcript_update=None):
         self.is_running = True
         self.start_time = datetime.utcnow()
+        self.audio_chunks_received = []
         
         recording_dir = Path('data/recordings')
         recording_dir.mkdir(parents=True, exist_ok=True)
@@ -33,18 +35,19 @@ class MeetingBot:
             self.browser = await playwright.chromium.launch(
                 headless=False,
                 args=[
-                    '--use-fake-ui-for-media-stream',
-                    '--use-fake-device-for-media-stream',
                     '--disable-blink-features=AutomationControlled',
-                    '--autoplay-policy=no-user-gesture-required'
+                    '--autoplay-policy=no-user-gesture-required',
+                    '--auto-select-desktop-capture-source=Entire screen',
+                    '--enable-usermedia-screen-capturing',
+                    '--allow-running-insecure-content',
+                    '--disable-web-security',
+                    '--use-fake-ui-for-media-stream'
                 ]
             )
             
             context = await self.browser.new_context(
-                permissions=['microphone', 'camera'],
-                viewport={'width': 1280, 'height': 720},
-                record_video_dir=str(recording_dir),
-                record_video_size={'width': 1280, 'height': 720}
+                permissions=['microphone', 'camera', 'display-capture'],
+                viewport={'width': 1280, 'height': 720}
             )
             
             self.page = await context.new_page()
@@ -56,28 +59,56 @@ class MeetingBot:
             else:
                 raise ValueError(f"Unsupported meeting platform: {self.meeting_url}")
             
+            await asyncio.sleep(5)
+            await self._start_audio_recording()
+            
             while self.is_running:
                 await asyncio.sleep(1)
             
             try:
-                video_path = None
-                if self.page and self.page.video:
-                    video_path = await self.page.video.path()
+                audio_data = await self.page.evaluate("""
+                    () => {
+                        return new Promise((resolve) => {
+                            if (window.mediaRecorder && window.mediaRecorder.state !== 'inactive') {
+                                window.mediaRecorder.onstop = () => {
+                                    if (window.audioChunks.length > 0) {
+                                        const blob = new Blob(window.audioChunks, { type: 'audio/webm' });
+                                        const reader = new FileReader();
+                                        reader.onloadend = () => {
+                                            resolve(reader.result);
+                                        };
+                                        reader.readAsDataURL(blob);
+                                    } else {
+                                        resolve(null);
+                                    }
+                                };
+                                window.mediaRecorder.stop();
+                            } else {
+                                resolve(null);
+                            }
+                        });
+                    }
+                """)
+                
+                if audio_data:
+                    audio_bytes = base64.b64decode(audio_data.split(',')[1])
+                    with open(self.recording_path, 'wb') as f:
+                        f.write(audio_bytes)
+                    print(f"Audio recording saved to: {self.recording_path}")
+                else:
+                    print("No audio data captured")
                 
                 await self.page.close()
                 await context.close()
                 await self.browser.close()
                 
-                await asyncio.sleep(3)
-                
-                if video_path and os.path.exists(video_path):
-                    shutil.move(video_path, str(self.recording_path))
-                    print(f"Recording saved to: {self.recording_path}")
-                else:
-                    print(f"Warning: Video file not found at {video_path}")
             except Exception as e:
                 print(f"Error saving recording: {e}")
                 try:
+                    if self.page:
+                        await self.page.close()
+                    if context:
+                        await context.close()
                     if self.browser:
                         await self.browser.close()
                 except:
@@ -158,6 +189,51 @@ class MeetingBot:
             await join_audio.click()
         except:
             pass
+    
+    async def _start_audio_recording(self):
+        try:
+            result = await self.page.evaluate("""
+                async () => {
+                    window.audioChunks = [];
+                    try {
+                        const audioElements = document.querySelectorAll('audio, video');
+                        if (audioElements.length === 0) {
+                            return { success: false, error: 'No audio elements found' };
+                        }
+                        
+                        const audioContext = new AudioContext({ sampleRate: 16000 });
+                        const destination = audioContext.createMediaStreamDestination();
+                        
+                        audioElements.forEach(element => {
+                            const source = audioContext.createMediaElementSource(element);
+                            source.connect(destination);
+                            source.connect(audioContext.destination);
+                        });
+                        
+                        const mediaRecorder = new MediaRecorder(destination.stream, {
+                            mimeType: 'audio/webm;codecs=opus',
+                            audioBitsPerSecond: 128000
+                        });
+                        
+                        mediaRecorder.ondataavailable = (event) => {
+                            if (event.data.size > 0) {
+                                window.audioChunks.push(event.data);
+                            }
+                        };
+                        
+                        window.mediaRecorder = mediaRecorder;
+                        window.audioContext = audioContext;
+                        mediaRecorder.start(1000);
+                        
+                        return { success: true, message: 'Recording started' };
+                    } catch (err) {
+                        return { success: false, error: err.toString() };
+                    }
+                }
+            """)
+            print(f"Audio recording initialized: {result}")
+        except Exception as e:
+            print(f"Failed to start audio recording: {e}")
     
     def stop(self):
         self.is_running = False
