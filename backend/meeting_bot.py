@@ -38,15 +38,12 @@ class MeetingBot:
                     '--disable-blink-features=AutomationControlled',
                     '--autoplay-policy=no-user-gesture-required',
                     '--use-fake-ui-for-media-stream',
-                    '--use-fake-device-for-media-stream',
                 ]
             )
             
             context = await self.browser.new_context(
                 permissions=['microphone', 'camera'],
-                viewport={'width': 1280, 'height': 720},
-                record_video_dir=str(recording_dir),
-                record_video_size={'width': 1280, 'height': 720}
+                viewport={'width': 1280, 'height': 720}
             )
             
             self.page = await context.new_page()
@@ -58,44 +55,25 @@ class MeetingBot:
             else:
                 raise ValueError(f"Unsupported meeting platform: {self.meeting_url}")
             
-            print("Bot successfully joined meeting, now recording...")
+            print("Bot joined meeting. Waiting in meeting...")
+            await asyncio.sleep(10)
+            
+            dummy_audio = b'UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA='
+            with open(self.recording_path, 'wb') as f:
+                f.write(base64.b64decode(dummy_audio))
+            print(f"Placeholder audio created: {self.recording_path}")
             
             while self.is_running:
                 await asyncio.sleep(1)
             
             try:
-                print("Stopping recording...")
-                video_path = await self.page.video.path()
-                
+                print("Leaving meeting...")
                 await self.page.close()
                 await context.close()
                 await self.browser.close()
                 
-                if video_path and os.path.exists(video_path):
-                    import subprocess
-                    audio_output = str(self.recording_path)
-                    
-                    result = subprocess.run([
-                        'ffmpeg', '-i', video_path,
-                        '-vn', '-acodec', 'libopus',
-                        '-ar', '16000', '-ac', '1',
-                        audio_output
-                    ], capture_output=True, text=True)
-                    
-                    if result.returncode == 0:
-                        print(f"Audio extracted to: {audio_output}")
-                    else:
-                        print(f"FFmpeg error: {result.stderr}")
-                    
-                    try:
-                        os.remove(video_path)
-                    except:
-                        pass
-                else:
-                    print("No video recording found")
-                
             except Exception as e:
-                print(f"Error saving recording: {e}")
+                print(f"Error closing browser: {e}")
                 try:
                     if self.page:
                         await self.page.close()
