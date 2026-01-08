@@ -108,22 +108,25 @@ class MeetingBot:
             print(f"Could not fill name: {e}")
         
         try:
-            turn_off_mic = await self.page.query_selector('[aria-label*="microphone" i], [data-is-muted]')
-            if turn_off_mic:
-                mic_state = await turn_off_mic.get_attribute('data-is-muted')
-                if mic_state == 'false':
-                    await turn_off_mic.click()
-                    print("Turned off microphone to prevent echo")
+            await asyncio.sleep(1)
+            mic_buttons = await self.page.query_selector_all('[role="button"][aria-label*="microphone" i]')
+            for btn in mic_buttons:
+                aria_label = await btn.get_attribute('aria-label')
+                if aria_label and 'off' not in aria_label.lower():
+                    await btn.click()
+                    print(f"Clicked microphone button: {aria_label}")
+                    break
         except Exception as e:
             print(f"Could not toggle mic: {e}")
         
         try:
-            turn_off_camera = await self.page.query_selector('[aria-label*="camera" i]')
-            if turn_off_camera:
-                camera_state = await turn_off_camera.get_attribute('data-is-muted')
-                if camera_state != 'true':
-                    await turn_off_camera.click()
-                    print("Turned off camera")
+            camera_buttons = await self.page.query_selector_all('[role="button"][aria-label*="camera" i]')
+            for btn in camera_buttons:
+                aria_label = await btn.get_attribute('aria-label')
+                if aria_label and 'off' not in aria_label.lower():
+                    await btn.click()
+                    print(f"Clicked camera button: {aria_label}")
+                    break
         except Exception as e:
             print(f"Could not toggle camera: {e}")
         
@@ -183,23 +186,28 @@ class MeetingBot:
     
     async def _start_audio_capture(self):
         try:
-            cdp = await self.page.context.new_cdp_session(self.page)
-            
-            await cdp.send('Page.enable')
-            await cdp.send('Page.setWebLifecycleState', {'state': 'active'})
-            
             result = await self.page.evaluate("""
                 async () => {
                     try {
-                        const stream = await navigator.mediaDevices.getUserMedia({ 
-                            audio: {
-                                echoCancellation: false,
-                                noiseSuppression: false,
-                                autoGainControl: false
-                            } 
+                        const audioElements = document.querySelectorAll('audio, video');
+                        if (audioElements.length === 0) {
+                            return { success: false, error: 'No audio/video elements found' };
+                        }
+                        
+                        const audioContext = new AudioContext({ sampleRate: 16000 });
+                        const destination = audioContext.createMediaStreamDestination();
+                        
+                        audioElements.forEach(element => {
+                            try {
+                                const source = audioContext.createMediaElementSource(element);
+                                source.connect(destination);
+                                source.connect(audioContext.destination);
+                            } catch (e) {
+                                console.log('Could not connect element:', e);
+                            }
                         });
                         
-                        window.audioRecorder = new MediaRecorder(stream, {
+                        window.audioRecorder = new MediaRecorder(destination.stream, {
                             mimeType: 'audio/webm;codecs=opus'
                         });
                         
@@ -211,13 +219,13 @@ class MeetingBot:
                         };
                         
                         window.audioRecorder.start(1000);
-                        return { success: true, message: 'Recording started' };
+                        return { success: true, message: 'Recording meeting audio', elements: audioElements.length };
                     } catch (err) {
                         return { success: false, error: err.toString() };
                     }
                 }
             """)
-            print(f"Audio capture started: {result}")
+            print(f"Audio capture result: {result}")
             
         except Exception as e:
             print(f"Failed to start audio capture: {e}")
