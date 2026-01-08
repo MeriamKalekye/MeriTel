@@ -16,6 +16,41 @@
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
 }
 
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 32px;
+  gap: 16px;
+}
+
+.page-header h1 {
+  margin: 0;
+  font-size: 28px;
+  color: #333;
+}
+
+.join-live-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: #F44336;
+  border: none;
+  border-radius: 6px;
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.join-live-link:hover {
+  background: #D32F2F;
+  transform: translateY(-1px);
+}
+
 .create-meeting-container h1 {
   margin: 0 0 32px 0;
   font-size: 28px;

@@ -1,7 +1,9 @@
 from flask import Flask, request, jsonify, redirect, session, send_file
 from flask_cors import CORS
+from flask_socketio import SocketIO, emit, join_room, leave_room
 import os
 import uuid
+import asyncio
 from datetime import datetime, timedelta
 from pathlib import Path
 
@@ -15,6 +17,7 @@ from storage import MeetingStorage
 from platform_integrations.zoom_integration import ZoomPlatform
 from word_timestamp_transcriber import WordTimestampTranscriber
 from summarizer import MeetingSummarizer
+from meeting_bot import BotManager
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = SECRET_KEY
@@ -23,8 +26,10 @@ app.config['RECORDINGS_FOLDER'] = RECORDINGS_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = 500 * 1024 * 1024
 
 CORS(app, resources={r"/api/*": {"origins": CORS_ORIGINS}}, supports_credentials=True)
+socketio = SocketIO(app, cors_allowed_origins=CORS_ORIGINS)
 
 storage = MeetingStorage(data_dir='data')
+bot_manager = BotManager()
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(RECORDINGS_FOLDER, exist_ok=True)
@@ -399,5 +404,108 @@ def summarize_structured(meeting_id):
         return jsonify({'error': f'Summarization failed: {str(e)}'}), 500
 
 
+@app.route('/api/bots/start', methods=['POST'])
+def start_bot():
+    data = request.get_json()
+    
+    if not data or 'meeting_id' not in data or 'meeting_url' not in data:
+        return jsonify({'error': 'meeting_id and meeting_url required'}), 400
+    
+    meeting_id = data['meeting_id']
+    meeting_url = data['meeting_url']
+    bot_name = data.get('bot_name', 'MeriTel Bot')
+    
+    meeting = storage.get_meeting(meeting_id)
+    if not meeting:
+        return jsonify({'error': 'Meeting not found'}), 404
+    
+    try:
+        success = bot_manager.start_bot(meeting_id, meeting_url, bot_name)
+        
+        if not success:
+            return jsonify({'error': 'Bot already active for this meeting'}), 400
+        
+        storage.update_meeting(meeting_id, {'status': 'live', 'join_url': meeting_url})
+        
+        return jsonify({
+            'message': 'Bot started successfully',
+            'meeting_id': meeting_id,
+            'status': 'live'
+        }), 200
+    
+    except Exception as e:
+        return jsonify({'error': f'Failed to start bot: {str(e)}'}), 500
+
+
+@app.route('/api/bots/<meeting_id>/stop', methods=['POST'])
+async def stop_bot(meeting_id):
+    try:
+        recording_path = await bot_manager.stop_bot(meeting_id)
+        
+        if recording_path:
+            storage.update_meeting(meeting_id, {
+                'status': 'recorded',
+                'audio_file_path': recording_path
+            })
+        else:
+            storage.update_meeting(meeting_id, {'status': 'completed'})
+        
+        return jsonify({
+            'message': 'Bot stopped successfully',
+            'meeting_id': meeting_id,
+            'recording_path': recording_path
+        }), 200
+    
+    except Exception as e:
+        return jsonify({'error': f'Failed to stop bot: {str(e)}'}), 500
+
+
+@app.route('/api/bots/<meeting_id>/status', methods=['GET'])
+def get_bot_status(meeting_id):
+    status = bot_manager.get_bot_status(meeting_id)
+    return jsonify(status)
+
+
+@app.route('/api/bots/active', methods=['GET'])
+def list_active_bots():
+    bots = bot_manager.list_active_bots()
+    return jsonify({'bots': bots})
+
+
+@socketio.on('connect')
+def handle_connect():
+    print(f"Client connected: {request.sid}")
+    emit('connected', {'data': 'Connected to MeriTel server'})
+
+
+@socketio.on('disconnect')
+def handle_disconnect():
+    print(f"Client disconnected: {request.sid}")
+
+
+@socketio.on('join_meeting')
+def handle_join_meeting(data):
+    meeting_id = data.get('meeting_id')
+    if meeting_id:
+        join_room(meeting_id)
+        print(f"Client {request.sid} joined meeting room {meeting_id}")
+        emit('joined_meeting', {'meeting_id': meeting_id})
+
+
+@socketio.on('leave_meeting')
+def handle_leave_meeting(data):
+    meeting_id = data.get('meeting_id')
+    if meeting_id:
+        leave_room(meeting_id)
+        print(f"Client {request.sid} left meeting room {meeting_id}")
+
+
+def broadcast_transcript_update(meeting_id, transcript_data):
+    socketio.emit('transcript_update', {
+        'meeting_id': meeting_id,
+        'transcript': transcript_data
+    }, room=meeting_id)
+
+
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    socketio.run(app, debug=True, host='0.0.0.0', port=5000, allow_unsafe_werkzeug=True)

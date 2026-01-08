@@ -1,0 +1,279 @@
+import asyncio
+import os
+import threading
+import time
+from datetime import datetime
+from pathlib import Path
+from typing import Optional, Dict, Any
+from playwright.async_api import async_playwright, Page, Browser
+import soundfile as sf
+import numpy as np
+
+
+class MeetingBot:
+    def __init__(self, meeting_id: str, meeting_url: str, bot_name: str = "MeriTel Bot"):
+        self.meeting_id = meeting_id
+        self.meeting_url = meeting_url
+        self.bot_name = bot_name
+        self.is_running = False
+        self.browser: Optional[Browser] = None
+        self.page: Optional[Page] = None
+        self.audio_chunks = []
+        self.recording_path = None
+        self.start_time = None
+        
+    async def start(self, on_transcript_update=None):
+        self.is_running = True
+        self.start_time = datetime.utcnow()
+        
+        async with async_playwright() as playwright:
+            self.browser = await playwright.chromium.launch(
+                headless=False,
+                args=[
+                    '--use-fake-ui-for-media-stream',
+                    '--use-fake-device-for-media-stream',
+                    '--disable-blink-features=AutomationControlled',
+                    '--autoplay-policy=no-user-gesture-required'
+                ]
+            )
+            
+            context = await self.browser.new_context(
+                permissions=['microphone', 'camera'],
+                viewport={'width': 1280, 'height': 720}
+            )
+            
+            self.page = await context.new_page()
+            
+            if 'meet.google.com' in self.meeting_url:
+                await self._join_google_meet()
+            elif 'zoom.us' in self.meeting_url:
+                await self._join_zoom()
+            else:
+                raise ValueError(f"Unsupported meeting platform: {self.meeting_url}")
+            
+            while self.is_running:
+                await asyncio.sleep(1)
+            
+            await self._save_recording()
+            await self.browser.close()
+    
+    async def _join_google_meet(self):
+        await self.page.goto(self.meeting_url)
+        
+        await asyncio.sleep(3)
+        
+        try:
+            name_input = await self.page.wait_for_selector('input[placeholder*="name" i]', timeout=5000)
+            await name_input.fill(self.bot_name)
+        except:
+            pass
+        
+        try:
+            turn_off_mic = await self.page.query_selector('[aria-label*="microphone" i]')
+            if turn_off_mic:
+                mic_state = await turn_off_mic.get_attribute('data-is-muted')
+                if mic_state != 'true':
+                    await turn_off_mic.click()
+        except:
+            pass
+        
+        try:
+            turn_off_camera = await self.page.query_selector('[aria-label*="camera" i]')
+            if turn_off_camera:
+                camera_state = await turn_off_camera.get_attribute('data-is-muted')
+                if camera_state != 'true':
+                    await turn_off_camera.click()
+        except:
+            pass
+        
+        await asyncio.sleep(2)
+        
+        try:
+            join_button = await self.page.wait_for_selector('button:has-text("Ask to join")', timeout=5000)
+            await join_button.click()
+        except:
+            try:
+                join_button = await self.page.wait_for_selector('button:has-text("Join now")', timeout=5000)
+                await join_button.click()
+            except:
+                pass
+        
+        await asyncio.sleep(3)
+        
+        await self._start_audio_capture()
+    
+    async def _join_zoom(self):
+        await self.page.goto(self.meeting_url)
+        
+        await asyncio.sleep(3)
+        
+        try:
+            launch_meeting = await self.page.wait_for_selector('a[href*="zoomwebclient"]', timeout=10000)
+            await launch_meeting.click()
+        except:
+            pass
+        
+        await asyncio.sleep(3)
+        
+        try:
+            name_input = await self.page.wait_for_selector('input#input-for-name', timeout=5000)
+            await name_input.fill(self.bot_name)
+        except:
+            pass
+        
+        try:
+            join_button = await self.page.wait_for_selector('button:has-text("Join")', timeout=5000)
+            await join_button.click()
+        except:
+            pass
+        
+        await asyncio.sleep(5)
+        
+        try:
+            join_audio = await self.page.wait_for_selector('button:has-text("Join Audio by Computer")', timeout=5000)
+            await join_audio.click()
+        except:
+            pass
+        
+        await self._start_audio_capture()
+    
+    async def _start_audio_capture(self):
+        recording_dir = Path('data/recordings')
+        recording_dir.mkdir(parents=True, exist_ok=True)
+        
+        self.recording_path = recording_dir / f"{self.meeting_id}_{int(time.time())}.wav"
+        
+        await self.page.evaluate("""
+            async () => {
+                window.audioChunks = [];
+                window.mediaRecorder = null;
+                
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ 
+                        audio: {
+                            echoCancellation: true,
+                            noiseSuppression: true,
+                            autoGainControl: true
+                        } 
+                    });
+                    
+                    const audioContext = new AudioContext();
+                    const source = audioContext.createMediaStreamSource(stream);
+                    const destination = audioContext.createMediaStreamDestination();
+                    source.connect(destination);
+                    
+                    const recorder = new MediaRecorder(destination.stream);
+                    window.mediaRecorder = recorder;
+                    
+                    recorder.ondataavailable = (event) => {
+                        if (event.data.size > 0) {
+                            window.audioChunks.push(event.data);
+                        }
+                    };
+                    
+                    recorder.start(1000);
+                } catch (err) {
+                    console.error('Audio capture error:', err);
+                }
+            }
+        """)
+    
+    async def stop(self):
+        self.is_running = False
+        
+        if self.page:
+            try:
+                audio_data = await self.page.evaluate("""
+                    () => {
+                        return new Promise((resolve) => {
+                            if (window.mediaRecorder) {
+                                window.mediaRecorder.onstop = () => {
+                                    const blob = new Blob(window.audioChunks, { type: 'audio/webm' });
+                                    const reader = new FileReader();
+                                    reader.onloadend = () => {
+                                        resolve(reader.result);
+                                    };
+                                    reader.readAsDataURL(blob);
+                                };
+                                window.mediaRecorder.stop();
+                            } else {
+                                resolve(null);
+                            }
+                        });
+                    }
+                """)
+                
+                if audio_data:
+                    import base64
+                    audio_bytes = base64.b64decode(audio_data.split(',')[1])
+                    with open(self.recording_path, 'wb') as f:
+                        f.write(audio_bytes)
+            except Exception as e:
+                print(f"Error saving audio: {e}")
+    
+    async def _save_recording(self):
+        pass
+    
+    def get_recording_path(self) -> Optional[str]:
+        return str(self.recording_path) if self.recording_path else None
+
+
+class BotManager:
+    def __init__(self):
+        self.active_bots: Dict[str, MeetingBot] = {}
+        self.bot_threads: Dict[str, threading.Thread] = {}
+    
+    def start_bot(self, meeting_id: str, meeting_url: str, bot_name: str = "MeriTel Bot") -> bool:
+        if meeting_id in self.active_bots:
+            return False
+        
+        bot = MeetingBot(meeting_id, meeting_url, bot_name)
+        self.active_bots[meeting_id] = bot
+        
+        def run_bot():
+            asyncio.run(bot.start())
+        
+        thread = threading.Thread(target=run_bot, daemon=True)
+        self.bot_threads[meeting_id] = thread
+        thread.start()
+        
+        return True
+    
+    async def stop_bot(self, meeting_id: str) -> Optional[str]:
+        if meeting_id not in self.active_bots:
+            return None
+        
+        bot = self.active_bots[meeting_id]
+        await bot.stop()
+        
+        recording_path = bot.get_recording_path()
+        
+        del self.active_bots[meeting_id]
+        if meeting_id in self.bot_threads:
+            del self.bot_threads[meeting_id]
+        
+        return recording_path
+    
+    def get_bot_status(self, meeting_id: str) -> Dict[str, Any]:
+        if meeting_id not in self.active_bots:
+            return {'status': 'inactive'}
+        
+        bot = self.active_bots[meeting_id]
+        
+        duration = 0
+        if bot.start_time:
+            duration = (datetime.utcnow() - bot.start_time).total_seconds()
+        
+        return {
+            'status': 'active',
+            'meeting_url': bot.meeting_url,
+            'bot_name': bot.bot_name,
+            'duration': duration,
+            'is_recording': bot.is_running
+        }
+    
+    def list_active_bots(self) -> Dict[str, Dict[str, Any]]:
+        return {
+            meeting_id: self.get_bot_status(meeting_id)
+            for meeting_id in self.active_bots.keys()
+        }

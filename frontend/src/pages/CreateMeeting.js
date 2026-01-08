@@ -97,7 +97,20 @@ const CreateMeeting = () => {
   return (
     <div className="create-meeting-page">
       <div className="create-meeting-container">
-        <h1>Create New Meeting</h1>
+        <div className="page-header">
+          <h1>Create New Meeting</h1>
+          <button 
+            type="button"
+            className="join-live-link"
+            onClick={() => navigate('/join-live')}
+          >
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <circle cx="10" cy="10" r="7" stroke="currentColor" strokeWidth="2"/>
+              <circle cx="10" cy="10" r="2" fill="currentColor"/>
+            </svg>
+            Join Live Meeting
+          </button>
+        </div>
         
         <form onSubmit={handleSubmit} className="meeting-form">
           <div className="form-group">
