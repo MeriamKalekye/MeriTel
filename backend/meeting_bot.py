@@ -108,12 +108,12 @@ class MeetingBot:
             print(f"Could not fill name: {e}")
         
         try:
-            turn_off_mic = await self.page.query_selector('[aria-label*="microphone" i]')
+            turn_off_mic = await self.page.query_selector('[aria-label*="microphone" i], [data-is-muted]')
             if turn_off_mic:
                 mic_state = await turn_off_mic.get_attribute('data-is-muted')
-                if mic_state != 'true':
+                if mic_state == 'false':
                     await turn_off_mic.click()
-                    print("Turned off microphone")
+                    print("Turned off microphone to prevent echo")
         except Exception as e:
             print(f"Could not toggle mic: {e}")
         

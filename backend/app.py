@@ -327,9 +327,13 @@ def transcribe_meeting(meeting_id):
         return jsonify({'error': f'{service} API key not configured'}), 500
     
     try:
+        print(f"Starting transcription for {meeting_id} using {service}")
+        print(f"Audio file: {audio_file_path}")
+        
         transcriber = WordTimestampTranscriber(service=service, api_key=api_key)
         
         result = transcriber.transcribe_with_timestamps(audio_file_path)
+        print(f"Transcription completed: {len(result.get('segments', []))} segments")
         
         participants = meeting.get('participants', [])
         if participants:
@@ -344,6 +348,7 @@ def transcribe_meeting(meeting_id):
         }
         
         storage.save_detailed_transcript(meeting_id, transcript_data)
+        print(f"Transcript saved for {meeting_id}")
         
         transcript = storage.get_detailed_transcript(meeting_id)
         
@@ -353,6 +358,9 @@ def transcribe_meeting(meeting_id):
         }), 200
     
     except Exception as e:
+        print(f"Transcription error for {meeting_id}: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'error': f'Transcription failed: {str(e)}'}), 500
 
 
