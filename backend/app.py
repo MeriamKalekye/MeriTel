@@ -147,6 +147,11 @@ def get_recording(meeting_id):
     return send_file(audio_file_path, as_attachment=False)
 
 
+@app.route('/api/meetings/<meeting_id>/audio', methods=['GET'])
+def get_audio(meeting_id):
+    return get_recording(meeting_id)
+
+
 @app.route('/api/auth/zoom', methods=['GET'])
 def zoom_auth():
     if not ZOOM_CLIENT_ID or not ZOOM_CLIENT_SECRET:

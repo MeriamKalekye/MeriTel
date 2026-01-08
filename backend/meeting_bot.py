@@ -1,13 +1,12 @@
 import asyncio
 import os
+import shutil
 import threading
 import time
 from datetime import datetime
 from pathlib import Path
 from typing import Optional, Dict, Any
 from playwright.async_api import async_playwright, Page, Browser
-import soundfile as sf
-import numpy as np
 
 
 class MeetingBot:
@@ -60,16 +59,29 @@ class MeetingBot:
             while self.is_running:
                 await asyncio.sleep(1)
             
-            video_path = await self.page.video.path()
-            
-            await self.page.close()
-            await context.close()
-            await self.browser.close()
-            
-            if video_path and os.path.exists(video_path):
-                import shutil
-                shutil.move(video_path, str(self.recording_path))
-                print(f"Recording saved to: {self.recording_path}")
+            try:
+                video_path = None
+                if self.page and self.page.video:
+                    video_path = await self.page.video.path()
+                
+                await self.page.close()
+                await context.close()
+                await self.browser.close()
+                
+                await asyncio.sleep(3)
+                
+                if video_path and os.path.exists(video_path):
+                    shutil.move(video_path, str(self.recording_path))
+                    print(f"Recording saved to: {self.recording_path}")
+                else:
+                    print(f"Warning: Video file not found at {video_path}")
+            except Exception as e:
+                print(f"Error saving recording: {e}")
+                try:
+                    if self.browser:
+                        await self.browser.close()
+                except:
+                    pass
     
     async def _join_google_meet(self):
         await self.page.goto(self.meeting_url)
@@ -146,58 +158,12 @@ class MeetingBot:
             await join_audio.click()
         except:
             pass
-        
-        await self._start_audio_capture()
-    
-    async def _start_audio_capture(self):
-        recording_dir = Path('data/recordings')
-        recording_dir.mkdir(parents=True, exist_ok=True)
-        
-        self.recording_path = recording_dir / f"{self.meeting_id}_{int(time.time())}.wav"
-        
-        await self.page.evaluate("""
-            async () => {
-                window.audioChunks = [];
-                window.mediaRecorder = null;
-                
-                try {
-                    const stream = await navigator.mediaDevices.getUserMedia({ 
-                        audio: {
-                            echoCancellation: true,
-                            noiseSuppression: true,
-                            autoGainControl: true
-                        } 
-                    });
-                    
-                    const audioContext = new AudioContext();
-                    const source = audioContext.createMediaStreamSource(stream);
-                    const destination = audioContext.createMediaStreamDestination();
-                    source.connect(destination);
-                    
-                    const recorder = new MediaRecorder(destination.stream);
-                    window.mediaRecorder = recorder;
-                    
-                    recorder.ondataavailable = (event) => {
-                        if (event.data.size > 0) {
-                            window.audioChunks.push(event.data);
-                        }
-                    };
-                    
-                    recorder.start(1000);
-                } catch (err) {
-                    console.error('Audio capture error:', err);
-                }
-            }
-        """)
     
     def stop(self):
         self.is_running = False
     
-    async def _save_recording(self):
-        pass
-    
     def get_recording_path(self) -> Optional[str]:
-        return str(self.recording_path) if self.recording_path else None
+        return str(self.recording_path) if self.recording_path and os.path.exists(str(self.recording_path)) else None
 
 
 class BotManager:
