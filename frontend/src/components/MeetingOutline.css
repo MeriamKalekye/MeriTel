@@ -1,0 +1,143 @@
+.meeting-outline {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.meeting-outline-empty {
+  padding: 40px 20px;
+  text-align: center;
+  color: #999;
+  font-size: 14px;
+}
+
+.outline-topic {
+  border-radius: 8px;
+  overflow: hidden;
+  background: #f8f9fa;
+  transition: all 0.2s ease;
+}
+
+.outline-topic:hover {
+  background: #e8eaf6;
+}
+
+.topic-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.expand-icon {
+  font-size: 10px;
+  color: #666;
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+}
+
+.expand-icon.expanded {
+  transform: rotate(90deg);
+}
+
+.topic-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.topic-title {
+  font-weight: 600;
+  color: #333;
+  font-size: 15px;
+}
+
+.topic-metadata {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 12px;
+  color: #666;
+}
+
+.topic-time {
+  font-family: 'Courier New', monospace;
+  color: #2196F3;
+}
+
+.topic-duration {
+  color: #666;
+}
+
+.seek-button {
+  background: #2196F3;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.seek-button:hover {
+  background: #1976D2;
+  transform: scale(1.1);
+}
+
+.seek-button:active {
+  transform: scale(0.95);
+}
+
+.subtopics {
+  list-style: none;
+  padding: 0 16px 16px 48px;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.subtopic {
+  display: flex;
+  gap: 8px;
+  color: #555;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.subtopic-bullet {
+  color: #2196F3;
+  font-weight: bold;
+  flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+  .topic-header {
+    padding: 12px;
+  }
+  
+  .topic-title {
+    font-size: 14px;
+  }
+  
+  .topic-metadata {
+    font-size: 11px;
+  }
+  
+  .subtopics {
+    padding: 0 12px 12px 36px;
+  }
+  
+  .subtopic {
+    font-size: 13px;
+  }
+}

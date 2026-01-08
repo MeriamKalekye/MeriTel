@@ -18,120 +18,48 @@ Do not make assumptions on important decisions — get clarification first.
 
 ## Workflow Steps
 
-### [x] Step: Technical Specification
+### [ ] Step: Technical Specification
 <!-- chat-id: 965a5b59-7a5c-4ae9-9636-6ad3ce9ae79b -->
 
-**Difficulty**: Hard - Complex architectural transformation from physical to online meetings
+Assess the task's difficulty, as underestimating it leads to poor outcomes.
+- easy: Straightforward implementation, trivial bug fix or feature
+- medium: Moderate complexity, some edge cases or caveats to consider
+- hard: Complex logic, many caveats, architectural considerations, or high-risk changes
 
-**Completed**:
-- ✅ Technical specification created in `spec.md`
-- ✅ Detailed implementation plan created in `implementation-plan.md`
-- ✅ Identified 12 concrete implementation tasks
-- ✅ Defined data model, API, and UI changes
-- ✅ Established verification criteria
+Create a technical specification for the task that is appropriate for the complexity level:
+- Review the existing codebase architecture and identify reusable components.
+- Define the implementation approach based on established patterns in the project.
+- Identify all source code files that will be created or modified.
+- Define any necessary data model, API, or interface changes.
+- Describe verification steps using the project's test and lint commands.
 
-See `spec.md` for full technical details and `implementation-plan.md` for detailed task breakdown.
+Save the output to `{@artifacts_path}/spec.md` with:
+- Technical context (language, dependencies)
+- Implementation approach
+- Source code structure changes
+- Data model / API / interface changes
+- Verification approach
 
----
+If the task is complex enough, create a detailed implementation plan based on `{@artifacts_path}/spec.md`:
+- Break down the work into concrete tasks (incrementable, testable milestones)
+- Each task should reference relevant contracts and include verification steps
+- Replace the Implementation step below with the planned tasks
 
-## Implementation Tasks
+Rule of thumb for step size: each step should represent a coherent unit of work (e.g., implement a component, add an API endpoint, write tests for a module). Avoid steps that are too granular (single function).
 
-### [x] Task 1: Setup & Configuration
-<!-- chat-id: d2b3661f-6ecd-4db5-902f-ba654f2f51dc -->
-Configure platform API credentials (Zoom, Deepgram/AssemblyAI) and update backend configuration.
-
-**Files**: `backend/config.py`, `backend/.env.example`
-
----
-
-### [x] Task 2: Backend Data Models Update
-<!-- chat-id: c6506e62-9afc-4aa4-aa19-a8c76eeb7e42 -->
-Modify storage models for online meetings, word-level timestamps, and structured summaries.
-
-**Files**: `backend/storage.py`
-
----
-
-### [x] Task 3: Platform Integration Base
-<!-- chat-id: 2b8a8c77-f0f3-4ee5-82e2-241394d24709 -->
-Create abstract base class for platform integrations.
-
-**Files**: `backend/platform_integrations/base_platform.py` (new)
+Save to `{@artifacts_path}/plan.md`. If the feature is trivial and doesn't warrant this breakdown, keep the Implementation step below as is.
 
 ---
 
-### [x] Task 4: Zoom Integration
-<!-- chat-id: fe7431e1-8f01-45ed-ba1b-d14345425690 -->
-Implement Zoom OAuth flow, meeting details retrieval, and recording download.
+### [ ] Step: Implementation
 
-**Files**: `backend/platform_integrations/zoom_integration.py` (new), `backend/app.py`
+Implement the task according to the technical specification and general engineering best practices.
 
----
-
-### [x] Task 5: Enhanced Transcription with Timestamps
-<!-- chat-id: 5763f02a-d2ce-41f3-b075-818eaa8c13fc -->
-Integrate Deepgram or AssemblyAI for word-level timestamp transcription.
-
-**Files**: `backend/word_timestamp_transcriber.py` (new), `backend/app.py`
-
----
-
-### [x] Task 6: Structured Summary Generation
-<!-- chat-id: 87b3a380-f278-4dbb-9e10-40eb576f8980 -->
-Enhance summarizer to generate Overview, Action Items, and Outline sections.
-
-**Files**: `backend/summarizer.py`, `backend/app.py`
-
----
-
-### [ ] Task 7: Audio Player Component
-<!-- chat-id: c5abba3d-6369-4341-ab6f-a7ae5eb05a04 -->
-Create React audio player component with playback controls and sync hooks.
-
-**Files**: `frontend/src/components/AudioPlayer.js` (new), `frontend/src/hooks/useAudioSync.js` (new)
-
----
-
-### [ ] Task 8: Synchronized Transcript Component
-Create transcript component with real-time highlighting and click-to-seek.
-
-**Files**: `frontend/src/components/SyncedTranscript.js` (new), `frontend/src/utils/transcriptHighlighter.js` (new)
-
----
-
-### [ ] Task 9: Structured Summary View
-Create summary component with Overview, Action Items, and Outline sections.
-
-**Files**: `frontend/src/components/StructuredSummary.js` (new), `frontend/src/components/ActionItemsList.js` (new), `frontend/src/components/MeetingOutline.js` (new)
-
----
-
-### [ ] Task 10: Update Meeting Creation Flow
-Add platform selection and file upload to meeting creation.
-
-**Files**: `frontend/src/pages/CreateMeeting.js`
-
----
-
-### [ ] Task 11: Meeting Detail Redesign
-Complete overhaul with audio player, synced transcript, and structured summary (Otter AI-like layout).
-
-**Files**: `frontend/src/pages/MeetingDetail.js`, `frontend/src/pages/MeetingDetail.css`
-
----
-
-### [ ] Task 12: Testing & Refinement
-End-to-end testing, bug fixes, performance optimization, and polish.
-
-**Activities**: Upload flow, Zoom flow, playback sync, summary validation, edge cases
-
----
-
-### [ ] Step: Final Report
-
-After completing all implementation tasks, write a comprehensive report to `{@artifacts_path}/report.md` describing:
-- What was implemented
-- How the solution was tested
-- Key challenges and solutions
-- Known limitations
-- Future enhancements
+1. Break the task into steps where possible.
+2. Implement the required changes in the codebase.
+3. Add and run relevant tests and linters.
+4. Perform basic manual verification if applicable.
+5. After completion, write a report to `{@artifacts_path}/report.md` describing:
+   - What was implemented
+   - How the solution was tested
+   - The biggest issues or challenges encountered
