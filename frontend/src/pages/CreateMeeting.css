@@ -16,6 +16,26 @@
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
 }
 
+.back-button {
+  background: transparent;
+  border: none;
+  color: #667eea;
+  padding: 8px 0;
+  margin-bottom: 16px;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.back-button:hover {
+  color: #764ba2;
+  transform: translateX(-2px);
+}
+
 .page-header {
   display: flex;
   align-items: center;

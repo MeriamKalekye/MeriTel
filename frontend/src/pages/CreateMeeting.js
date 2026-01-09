@@ -97,6 +97,13 @@ const CreateMeeting = () => {
   return (
     <div className="create-meeting-page">
       <div className="create-meeting-container">
+        <button 
+          type="button"
+          className="back-button"
+          onClick={() => navigate('/meetings')}
+        >
+          ← Back to Meetings
+        </button>
         <div className="page-header">
           <h1>Create New Meeting</h1>
           <button 

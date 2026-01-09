@@ -1,5 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import HomePage from './pages/HomePage';
 import MeetingsList from './pages/MeetingsList';
 import CreateMeeting from './pages/CreateMeeting';
 import MeetingDetail from './pages/MeetingDetail';
@@ -11,7 +12,8 @@ function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<MeetingsList />} />
+        <Route path="/" element={<HomePage />} />
+        <Route path="/meetings" element={<MeetingsList />} />
         <Route path="/create" element={<CreateMeeting />} />
         <Route path="/join-live" element={<JoinLiveMeeting />} />
         <Route path="/meetings/:meetingId" element={<MeetingDetail />} />
