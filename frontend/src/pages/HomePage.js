@@ -27,19 +27,37 @@ const HomePage = () => {
             Your AI Meeting Assistant
           </h1>
           <p className="hero-subtitle">
-            Join meetings automatically, capture every conversation, and get intelligent transcripts with AI-powered summaries
+            Record and transcribe meetings with AI-powered summaries and speaker identification
           </p>
-          <div className="hero-actions">
-            <button className="btn-hero-primary" onClick={() => navigate('/join-live')}>
-              Join Live Meeting
-            </button>
-            <button className="btn-hero-secondary" onClick={() => navigate('/create')}>
-              Upload Recording
-            </button>
+          
+          <div className="meeting-type-cards">
+            <div className="type-card" onClick={() => navigate('/physical-meeting')}>
+              <div className="type-icon physical">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                  <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                  <line x1="12" y1="19" x2="12" y2="23"/>
+                  <line x1="8" y1="23" x2="16" y2="23"/>
+                </svg>
+              </div>
+              <h3>Physical Meeting</h3>
+              <p>Record or upload in-person meetings for transcription</p>
+              <button className="type-button">Get Started →</button>
+            </div>
+
+            <div className="type-card" onClick={() => navigate('/join-live')}>
+              <div className="type-icon online">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <rect x="2" y="7" width="20" height="14" rx="2"/>
+                  <path d="M16 3h5v5"/>
+                  <line x1="21" y1="3" x2="16" y2="8"/>
+                </svg>
+              </div>
+              <h3>Online Meeting</h3>
+              <p>Bot joins Google Meet, Zoom, or Teams automatically</p>
+              <button className="type-button">Get Started →</button>
+            </div>
           </div>
-          <p className="hero-platforms">
-            Works with Google Meet, Zoom, and Microsoft Teams
-          </p>
         </div>
       </section>
 
