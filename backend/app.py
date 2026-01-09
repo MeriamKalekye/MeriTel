@@ -25,7 +25,7 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['RECORDINGS_FOLDER'] = RECORDINGS_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = 500 * 1024 * 1024
 
-CORS(app, resources={r"/api/*": {"origins": CORS_ORIGINS}}, supports_credentials=True)
+CORS(app, resources={r"/api/*": {"origins": CORS_ORIGINS, "allow_headers": ["Content-Type", "Authorization"], "methods": ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]}}, supports_credentials=True)
 socketio = SocketIO(app, cors_allowed_origins=CORS_ORIGINS)
 
 storage = MeetingStorage(data_dir='data')
