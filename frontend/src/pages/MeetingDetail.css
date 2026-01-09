@@ -93,9 +93,13 @@
   color: #666;
 }
 
-.action-button {
-  align-self: flex-start;
+.action-buttons {
+  display: flex;
+  gap: 12px;
   margin-left: 80px;
+}
+
+.action-button {
   padding: 10px 20px;
   border: none;
   border-radius: 8px;
@@ -114,6 +118,17 @@
   background: #1976D2;
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
+}
+
+.action-button.secondary {
+  background: #667eea;
+  color: white;
+}
+
+.action-button.secondary:hover:not(:disabled) {
+  background: #764ba2;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
 }
 
 .action-button:disabled {

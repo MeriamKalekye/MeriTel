@@ -192,24 +192,26 @@ const MeetingDetail = () => {
           )}
         </div>
 
-        {!hasTranscript && hasRecording && (
-          <button 
-            className="action-button primary"
-            onClick={handleTranscribe}
-            disabled={isProcessing}
-          >
-            {isProcessing ? 'Transcribing...' : '📝 Transcribe Meeting'}
-          </button>
-        )}
+        {hasRecording && (
+          <div className="action-buttons">
+            <button 
+              className="action-button primary"
+              onClick={handleTranscribe}
+              disabled={isProcessing}
+            >
+              {isProcessing ? 'Transcribing...' : hasTranscript ? '🔄 Re-transcribe Meeting' : '📝 Transcribe Meeting'}
+            </button>
 
-        {hasTranscript && !hasSummary && (
-          <button 
-            className="action-button primary"
-            onClick={handleGenerateSummary}
-            disabled={isProcessing}
-          >
-            {isProcessing ? 'Generating...' : '🧠 Generate Summary'}
-          </button>
+            {hasTranscript && (
+              <button 
+                className="action-button secondary"
+                onClick={handleGenerateSummary}
+                disabled={isProcessing}
+              >
+                {isProcessing ? 'Generating...' : hasSummary ? '🔄 Re-generate Summary' : '🧠 Generate Summary'}
+              </button>
+            )}
+          </div>
         )}
       </header>
 
