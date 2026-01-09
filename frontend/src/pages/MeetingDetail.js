@@ -120,6 +120,20 @@ const MeetingDetail = () => {
     }
   };
 
+  const handleDelete = async () => {
+    if (!window.confirm('Are you sure you want to delete this meeting? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      await axios.delete(`${API_BASE_URL}/api/meetings/${meetingId}`);
+      navigate('/meetings');
+    } catch (err) {
+      console.error('Error deleting meeting:', err);
+      setError(err.response?.data?.error || 'Failed to delete meeting');
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="meeting-detail-loading">
@@ -154,12 +168,20 @@ const MeetingDetail = () => {
   return (
     <div className="meeting-detail-v2">
       <header className="meeting-header">
-        <button className="back-button" onClick={() => navigate('/meetings')}>
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-            <path d="M12.5 15L7.5 10L12.5 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-          Back
-        </button>
+        <div className="header-nav">
+          <button className="back-button" onClick={() => navigate('/meetings')}>
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <path d="M12.5 15L7.5 10L12.5 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            Back
+          </button>
+          <button className="delete-button" onClick={handleDelete}>
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <path d="M3 5h14M8 5V3h4v2m-5 0v10m4-10v10m-7-12v14h10V3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            Delete
+          </button>
+        </div>
         
         <div className="meeting-title-section">
           <h1>{meeting.title}</h1>

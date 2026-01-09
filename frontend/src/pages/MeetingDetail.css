@@ -40,10 +40,17 @@
   z-index: 10;
 }
 
-.back-button {
+.header-nav {
   position: absolute;
   top: 24px;
   left: 32px;
+  right: 32px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.back-button {
   background: none;
   border: none;
   display: flex;
@@ -62,8 +69,27 @@
   color: #333;
 }
 
+.delete-button {
+  background: none;
+  border: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #dc3545;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.delete-button:hover {
+  background: #fee;
+  color: #c82333;
+}
+
 .meeting-title-section {
-  margin-left: 80px;
+  margin-top: 40px;
 }
 
 .meeting-title-section h1 {
