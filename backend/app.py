@@ -396,6 +396,17 @@ def transcribe_meeting(meeting_id):
         storage.save_detailed_transcript(meeting_id, transcript_data)
         print(f"Transcript saved for {meeting_id}")
         
+        unique_speakers = set()
+        for segment in result['segments']:
+            speaker = segment.get('speaker')
+            if speaker:
+                unique_speakers.add(speaker)
+        
+        if unique_speakers:
+            speaker_list = sorted(list(unique_speakers))
+            storage.update_meeting(meeting_id, {'participants': speaker_list})
+            print(f"Updated participants with {len(speaker_list)} speakers: {speaker_list}")
+        
         transcript = storage.get_detailed_transcript(meeting_id)
         
         return jsonify({

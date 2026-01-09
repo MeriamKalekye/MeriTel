@@ -9,7 +9,7 @@ const HomePage = () => {
     <div className="home-page">
       <nav className="home-nav">
         <div className="nav-brand">
-          <span className="logo">MeriTel</span>
+          <span className="logo">🔊 MeriTel</span>
         </div>
         <div className="nav-actions">
           <button className="btn-text" onClick={() => navigate('/meetings')}>
@@ -73,12 +73,50 @@ const HomePage = () => {
                 <line x1="16" y1="16" x2="16" y2="16" />
               </svg>
             </div>
-            <h3>Automated Bot Joins</h3>
-            <p>Our AI bot joins your meetings automatically, appearing as a participant to record everything seamlessly</p>
+            <h3>Online Meeting Bot</h3>
+            <p>AI bot automatically joins Google Meet, Zoom, or Teams as a participant to record everything seamlessly</p>
           </div>
 
           <div className="feature-card">
             <div className="feature-icon transcript">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                <line x1="12" y1="19" x2="12" y2="23"/>
+                <line x1="8" y1="23" x2="16" y2="23"/>
+              </svg>
+            </div>
+            <h3>Physical Meeting Recording</h3>
+            <p>Record in-person meetings directly or upload existing recordings for instant transcription and analysis</p>
+          </div>
+
+          <div className="feature-card">
+            <div className="feature-icon summary">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="9" cy="7" r="4"/>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                <circle cx="9" cy="7" r="4"/>
+                <path d="M3 21v-2a4 4 0 0 1 6-3.46"/>
+              </svg>
+            </div>
+            <h3>Speaker Identification</h3>
+            <p>Automatic speaker diarization labels each participant (Speaker A, B, C) for clear conversation tracking</p>
+          </div>
+
+          <div className="feature-card">
+            <div className="feature-icon real-time">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M12 20h9" />
+                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+              </svg>
+            </div>
+            <h3>AI-Powered Summaries</h3>
+            <p>Automatically generate structured meeting notes with overview, action items, and key discussion points</p>
+          </div>
+
+          <div className="feature-card">
+            <div className="feature-icon multi-platform">
               <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                 <polyline points="14 2 14 8 20 8" />
@@ -87,42 +125,8 @@ const HomePage = () => {
                 <line x1="10" y1="9" x2="8" y2="9" />
               </svg>
             </div>
-            <h3>Smart Transcription</h3>
-            <p>Get word-level timestamps and automatic speaker identification powered by advanced AI transcription</p>
-          </div>
-
-          <div className="feature-card">
-            <div className="feature-icon summary">
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M12 20h9" />
-                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
-              </svg>
-            </div>
-            <h3>AI Summaries</h3>
-            <p>Automatically generate structured meeting notes with overview, action items, and key discussion points</p>
-          </div>
-
-          <div className="feature-card">
-            <div className="feature-icon real-time">
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="12" cy="12" r="10" />
-                <polyline points="12 6 12 12 16 14" />
-              </svg>
-            </div>
-            <h3>Real-time Updates</h3>
-            <p>Watch transcripts appear live during meetings with synchronized audio playback and highlighting</p>
-          </div>
-
-          <div className="feature-card">
-            <div className="feature-icon multi-platform">
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <rect x="2" y="7" width="20" height="14" rx="2" />
-                <path d="M16 3h5v5" />
-                <line x1="21" y1="3" x2="16" y2="8" />
-              </svg>
-            </div>
-            <h3>Multi-Platform</h3>
-            <p>Compatible with all major video conferencing platforms including Google Meet, Zoom, and Teams</p>
+            <h3>Word-Level Timestamps</h3>
+            <p>Precise transcripts with timestamps for every word, synced with audio playback for easy navigation</p>
           </div>
 
           <div className="feature-card">
@@ -134,8 +138,8 @@ const HomePage = () => {
                 <rect x="3" y="14" width="7" height="7" />
               </svg>
             </div>
-            <h3>Meeting Dashboard</h3>
-            <p>Organize and access all your recordings, transcripts, and summaries in one beautiful interface</p>
+            <h3>Unified Dashboard</h3>
+            <p>Manage both physical and online meetings - all recordings, transcripts, and summaries in one place</p>
           </div>
         </div>
       </section>
