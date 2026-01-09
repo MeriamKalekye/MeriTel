@@ -35,7 +35,7 @@ const MeetingsList = () => {
 
   const filteredMeetings = meetings.filter(meeting => {
     if (filter === 'all') return true;
-    if (filter === 'live') return meeting.status === 'live';
+    if (filter === 'online') return meeting.meeting_type !== 'physical';
     if (filter === 'physical') return meeting.meeting_type === 'physical';
     if (filter === 'transcribed') return meeting.transcript_file_path;
     return true;
@@ -72,10 +72,10 @@ const MeetingsList = () => {
           All ({meetings.length})
         </button>
         <button 
-          className={filter === 'live' ? 'active' : ''}
-          onClick={() => setFilter('live')}
+          className={filter === 'online' ? 'active' : ''}
+          onClick={() => setFilter('online')}
         >
-          Live ({meetings.filter(m => m.status === 'live').length})
+          Online ({meetings.filter(m => m.meeting_type !== 'physical').length})
         </button>
         <button 
           className={filter === 'physical' ? 'active' : ''}
