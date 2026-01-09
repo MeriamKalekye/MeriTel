@@ -36,7 +36,7 @@ const MeetingsList = () => {
   const filteredMeetings = meetings.filter(meeting => {
     if (filter === 'all') return true;
     if (filter === 'live') return meeting.status === 'live';
-    if (filter === 'recorded') return meeting.audio_file_path && !meeting.transcript_file_path;
+    if (filter === 'physical') return meeting.meeting_type === 'physical';
     if (filter === 'transcribed') return meeting.transcript_file_path;
     return true;
   });
@@ -55,11 +55,11 @@ const MeetingsList = () => {
       <header className="meetings-header">
         <h1>My Meetings</h1>
         <div className="header-actions">
-          <button className="btn-primary" onClick={() => navigate('/create')}>
-            + New Meeting
+          <button className="btn-primary" onClick={() => navigate('/physical-meeting')}>
+            + Physical Meeting
           </button>
           <button className="btn-secondary" onClick={() => navigate('/join-live')}>
-            🔴 Join Live Meeting
+            🔴 Online Meeting
           </button>
         </div>
       </header>
@@ -78,10 +78,10 @@ const MeetingsList = () => {
           Live ({meetings.filter(m => m.status === 'live').length})
         </button>
         <button 
-          className={filter === 'recorded' ? 'active' : ''}
-          onClick={() => setFilter('recorded')}
+          className={filter === 'physical' ? 'active' : ''}
+          onClick={() => setFilter('physical')}
         >
-          Recorded ({meetings.filter(m => m.audio_file_path && !m.transcript_file_path).length})
+          Physical ({meetings.filter(m => m.meeting_type === 'physical').length})
         </button>
         <button 
           className={filter === 'transcribed' ? 'active' : ''}
