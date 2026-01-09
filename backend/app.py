@@ -290,6 +290,42 @@ def upload_recording():
         return jsonify({'error': f'Failed to upload recording: {str(e)}'}), 500
 
 
+@app.route('/api/meetings/<meeting_id>/upload', methods=['POST'])
+def upload_to_meeting(meeting_id):
+    meeting = storage.get_meeting(meeting_id)
+    if not meeting:
+        return jsonify({'error': 'Meeting not found'}), 404
+    
+    if 'audio' not in request.files:
+        return jsonify({'error': 'No audio file provided'}), 400
+    
+    file = request.files['audio']
+    if file.filename == '':
+        return jsonify({'error': 'No file selected'}), 400
+    
+    file_ext = os.path.splitext(file.filename)[1]
+    filename = f"upload_{meeting_id}_{uuid.uuid4().hex}{file_ext}"
+    file_path = os.path.join(UPLOAD_FOLDER, filename)
+    
+    try:
+        file.save(file_path)
+        
+        storage.update_meeting(meeting_id, {
+            'audio_file_path': file_path,
+            'status': 'recorded'
+        })
+        
+        updated_meeting = storage.get_meeting(meeting_id)
+        
+        return jsonify({
+            'message': 'Audio file uploaded successfully',
+            'meeting': updated_meeting
+        }), 200
+    
+    except Exception as e:
+        return jsonify({'error': f'Failed to upload file: {str(e)}'}), 500
+
+
 @app.route('/api/meetings/<meeting_id>/participants', methods=['POST'])
 def add_participant(meeting_id):
     data = request.get_json()
