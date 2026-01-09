@@ -1,18 +1,28 @@
-# MeriTel - AI-Powered Meeting Bot Platform
+# MeriTel - AI-Powered Meeting Intelligence Platform
 
-An Otter.ai-like meeting bot that joins Google Meet/Zoom meetings, records conversations, generates AI transcripts with speaker diarization, and creates structured summaries.
+A comprehensive meeting assistant that records, transcribes, and summarizes both physical and online meetings with AI-powered speaker diarization and structured summaries.
 
 ## Features
 
-- 🤖 **Live Meeting Bot**: Automated bot joins Google Meet/Zoom as a participant
-- 🎙️ **Real-time Recording**: Captures meeting audio automatically
-- 📝 **AI Transcription**: Word-level timestamps and speaker diarization (AssemblyAI/Deepgram)
-- 🧠 **Smart Summaries**: AI-generated meeting summaries with:
+### 🔊 Physical Meetings
+- 🎙️ **Browser Recording**: Record meetings directly from your microphone
+- 📤 **File Upload**: Upload pre-recorded meetings (MP3, WAV, MP4, M4A)
+- 💾 **Drag & Drop**: Easy file upload interface (up to 500MB)
+
+### 🌐 Online Meetings
+- 🤖 **Automated Bot**: Bot joins Google Meet/Zoom as a participant
+- 🎬 **Live Recording**: Captures meeting audio automatically
+- 🎯 **Multi-platform**: Google Meet, Zoom, Microsoft Teams
+
+### 🧠 AI-Powered Intelligence
+- 📝 **Smart Transcription**: Word-level timestamps with speaker diarization (AssemblyAI/Deepgram)
+- 👥 **Speaker Detection**: Automatic participant identification
+- 📊 **Structured Summaries**: AI-generated meeting notes with:
   - Overview
   - Action Items
   - Structured Outline
-- 🎯 **Multi-platform**: Supports Google Meet, Zoom, Microsoft Teams
-- 📊 **Meeting Dashboard**: View all recordings, transcripts, and summaries
+- 🔄 **Re-transcribe & Re-generate**: Update transcripts and summaries anytime
+- 📊 **Unified Dashboard**: Manage all physical and online meetings in one place
 
 ## Tech Stack
 
@@ -74,8 +84,25 @@ DEFAULT_SUMMARIZATION_SERVICE=deepseek
 
 ## Usage
 
-1. **Start a Meeting Bot**:
-   - Click "Join Live Meeting"
+### Physical Meetings
+
+1. **Record Now**:
+   - Click "Physical Meeting" → "Record Now"
+   - Enter meeting title and description
+   - Click "Start Recording" (grant microphone access)
+   - Pause/Resume as needed
+   - Click "Stop & Save" when done
+
+2. **Upload Recording**:
+   - Click "Physical Meeting" → "Upload Recording"
+   - Enter meeting title and description
+   - Drag & drop or select audio file (MP3, WAV, MP4, M4A)
+   - Upload and process
+
+### Online Meetings
+
+1. **Start Meeting Bot**:
+   - Click "Online Meeting"
    - Enter meeting URL (Google Meet/Zoom)
    - Bot joins automatically and starts recording
 
@@ -83,13 +110,19 @@ DEFAULT_SUMMARIZATION_SERVICE=deepseek
    - Click "Stop Recording" when meeting ends
    - Audio is saved and ready for transcription
 
+### Processing
+
 3. **Transcribe**:
-   - Click "Transcribe Meeting"
-   - Wait for AI transcription with speaker labels
+   - Open any meeting from your dashboard
+   - Click "📝 Transcribe Meeting"
+   - AI generates transcript with speaker labels
 
 4. **Generate Summary**:
-   - Click "Generate Summary"
-   - AI creates structured meeting notes
+   - Click "🧠 Generate Summary"
+   - AI creates structured meeting notes with action items
+
+5. **Re-process**:
+   - Click "🔄 Re-transcribe" or "🔄 Re-generate" to update existing content
 
 ## API Keys
 
