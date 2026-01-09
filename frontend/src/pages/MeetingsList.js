@@ -18,7 +18,10 @@ const MeetingsList = () => {
   const loadMeetings = async () => {
     try {
       const response = await axios.get(`${API_BASE_URL}/api/meetings`);
-      setMeetings(response.data.meetings || []);
+      const sortedMeetings = (response.data.meetings || []).sort((a, b) => {
+        return new Date(b.created_at) - new Date(a.created_at);
+      });
+      setMeetings(sortedMeetings);
     } catch (err) {
       console.error('Error loading meetings:', err);
     } finally {
@@ -37,7 +40,6 @@ const MeetingsList = () => {
     if (filter === 'all') return true;
     if (filter === 'online') return meeting.meeting_type !== 'physical';
     if (filter === 'physical') return meeting.meeting_type === 'physical';
-    if (filter === 'transcribed') return meeting.transcript_file_path;
     return true;
   });
 
@@ -82,12 +84,6 @@ const MeetingsList = () => {
           onClick={() => setFilter('physical')}
         >
           Physical ({meetings.filter(m => m.meeting_type === 'physical').length})
-        </button>
-        <button 
-          className={filter === 'transcribed' ? 'active' : ''}
-          onClick={() => setFilter('transcribed')}
-        >
-          Transcribed ({meetings.filter(m => m.transcript_file_path).length})
         </button>
       </div>
 
