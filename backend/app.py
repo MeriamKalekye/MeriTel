@@ -398,7 +398,7 @@ def transcribe_meeting(meeting_id):
         
         unique_speakers = set()
         for segment in result['segments']:
-            speaker = segment.get('speaker')
+            speaker = segment.get('speaker_name') or segment.get('speaker')
             print(f"DEBUG: Found speaker in segment: {speaker}")
             if speaker:
                 unique_speakers.add(speaker)
