@@ -109,7 +109,10 @@ class MeetingStorage:
         with open(transcript_file, 'w', encoding='utf-8') as f:
             json.dump(transcript, f, indent=2, ensure_ascii=False)
         
-        self.update_meeting(meeting_id, {'status': 'transcribed'})
+        self.update_meeting(meeting_id, {
+            'status': 'transcribed',
+            'transcript_file_path': str(transcript_file)
+        })
         return True
     
     def get_detailed_transcript(self, meeting_id: str) -> Optional[Dict[str, Any]]:

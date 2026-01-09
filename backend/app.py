@@ -399,13 +399,20 @@ def transcribe_meeting(meeting_id):
         unique_speakers = set()
         for segment in result['segments']:
             speaker = segment.get('speaker')
+            print(f"DEBUG: Found speaker in segment: {speaker}")
             if speaker:
                 unique_speakers.add(speaker)
         
+        print(f"DEBUG: Total unique speakers found: {unique_speakers}")
+        
         if unique_speakers:
             speaker_list = sorted(list(unique_speakers))
-            storage.update_meeting(meeting_id, {'participants': speaker_list})
+            update_result = storage.update_meeting(meeting_id, {'participants': speaker_list})
+            print(f"DEBUG: Update meeting result: {update_result}")
             print(f"Updated participants with {len(speaker_list)} speakers: {speaker_list}")
+            
+            updated_meeting = storage.get_meeting(meeting_id)
+            print(f"DEBUG: Participants after update: {updated_meeting.get('participants')}")
         
         transcript = storage.get_detailed_transcript(meeting_id)
         
