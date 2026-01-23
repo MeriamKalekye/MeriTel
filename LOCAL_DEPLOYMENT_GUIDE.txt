@@ -1,0 +1,156 @@
+================================================================================
+               MeriTel - Local Deployment Guide
+================================================================================
+
+QUICK START (For Non-Technical Users)
+--------------------------------------
+1. Double-click "START_MERITEL.bat"
+2. Wait 30-60 seconds for the browser to open automatically
+3. Start using MeriTel at http://localhost:3000
+4. To stop: Double-click "STOP_MERITEL.bat" or close both command windows
+
+
+SYSTEM REQUIREMENTS
+-------------------
+- Windows 10/11
+- 8GB RAM minimum (16GB recommended)
+- Python 3.8 or higher
+- Node.js 16 or higher
+- Internet connection (for ML APIs)
+- Microphone (for recording physical meetings)
+
+
+FIRST-TIME SETUP
+----------------
+Before running MeriTel for the first time:
+
+1. Install Prerequisites:
+   - Python: https://www.python.org/downloads/
+     (Check "Add Python to PATH" during installation)
+   
+   - Node.js: https://nodejs.org/
+     (Download LTS version)
+
+2. Configure API Keys:
+   - Open "backend/.env" file with Notepad
+   - Add your API keys (provided separately):
+     * ASSEMBLYAI_API_KEY=your_key_here
+     * DEEPSEEK_API_KEY=your_key_here
+
+3. Run START_MERITEL.bat (first run may take 5-10 minutes)
+
+
+DAILY USAGE
+-----------
+1. Starting MeriTel:
+   - Double-click START_MERITEL.bat
+   - Wait for browser to open
+   - Two command windows will appear (don't close them!)
+
+2. Recording Meetings:
+   Physical Meeting:
+   - Click "Physical Meeting" on homepage
+   - Choose "Record Now" or "Upload Recording"
+   - Click "Transcribe" after recording/uploading
+   - Click "Generate Summary" after transcription
+
+   Online Meeting:
+   - Click "Online Meeting" on homepage
+   - Enter Google Meet URL
+   - Bot joins automatically and records
+   - Click "Transcribe" and "Generate Summary" when done
+
+3. Stopping MeriTel:
+   - Option A: Double-click STOP_MERITEL.bat
+   - Option B: Close both command windows (Backend & Frontend)
+
+
+TROUBLESHOOTING
+---------------
+Problem: "Python is not installed"
+Solution: Install Python from python.org and check "Add to PATH"
+
+Problem: "Node.js is not installed"
+Solution: Install Node.js from nodejs.org
+
+Problem: Frontend won't start / stuck loading
+Solution: 
+  1. Run STOP_MERITEL.bat
+  2. Delete folder: frontend/node_modules
+  3. Run START_MERITEL.bat again
+
+Problem: "API key not configured" error
+Solution: Edit backend/.env and add missing API keys
+
+Problem: Echo in online meetings
+Solution: Echo reduction is automatically applied for online meetings.
+          If still present, try:
+          - Use physical meeting mode instead
+          - Ask participants to use headphones
+          - Use native Zoom/Meet recording (upload method)
+
+Problem: Port already in use
+Solution: Run STOP_MERITEL.bat, wait 10 seconds, then START_MERITEL.bat
+
+Problem: Can't access from other computers
+Solution: This local deployment only works on the same computer.
+          For network access, cloud deployment is required.
+
+
+DATA STORAGE
+------------
+All meeting data is stored locally in:
+  backend/data/
+    - meetings/    (meeting metadata)
+    - recordings/  (audio files)
+    - transcripts/ (transcription data)
+    - summaries/   (AI-generated summaries)
+
+To backup: Copy entire backend/data/ folder
+
+To delete all meetings: Delete contents of backend/data/ folders
+  (keep the folders themselves, only delete files inside)
+
+
+PERFORMANCE TIPS
+----------------
+- Close unnecessary browser tabs
+- Restart MeriTel if it becomes slow (STOP → START)
+- Large audio files (>100MB) may take longer to process
+- Allow 1-2 minutes for transcription of 30-minute meetings
+- Summaries generate in 5-10 seconds
+
+
+API COSTS (For Reference)
+--------------------------
+AssemblyAI (Transcription): ~$0.0075 per 30-min meeting
+DeepSeek (Summarization):   ~$0.001 per meeting
+Total per meeting:          ~$0.01 (1 cent)
+
+For 100 meetings/month:     ~$1/month in API costs
+
+
+SECURITY NOTES
+--------------
+- API keys are stored in backend/.env (keep this file private)
+- Meeting data stays on your computer (not sent to cloud)
+- Only audio files are sent to transcription APIs
+- No user data is collected or shared
+
+
+SUPPORT
+-------
+For issues or questions, contact:
+- Email: meriamkaleche@gmail.com
+- Include: Error message and what you were doing when error occurred
+
+
+VERSION INFORMATION
+-------------------
+MeriTel Version: 2.0
+Last Updated: January 2026
+Echo Reduction: Enabled for online meetings
+ML Models: AssemblyAI (ASR) + DeepSeek (Summarization)
+
+
+================================================================================

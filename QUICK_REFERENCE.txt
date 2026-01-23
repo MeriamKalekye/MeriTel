@@ -1,0 +1,90 @@
+┌─────────────────────────────────────────────────────────────────┐
+│                    MeriTel Quick Reference                      │
+│                   (Print and keep at desk)                      │
+└─────────────────────────────────────────────────────────────────┘
+
+╔═══════════════════════════════════════════════════════════════╗
+║                        TO START                               ║
+╠═══════════════════════════════════════════════════════════════╣
+║  1. Double-click: START_MERITEL.bat                           ║
+║  2. Wait for browser to open (30-60 seconds)                  ║
+║  3. URL: http://localhost:3000                                ║
+╚═══════════════════════════════════════════════════════════════╝
+
+╔═══════════════════════════════════════════════════════════════╗
+║                        TO STOP                                ║
+╠═══════════════════════════════════════════════════════════════╣
+║  Double-click: STOP_MERITEL.bat                               ║
+║  (or close both command windows)                              ║
+╚═══════════════════════════════════════════════════════════════╝
+
+╔═══════════════════════════════════════════════════════════════╗
+║                   RECORD PHYSICAL MEETING                     ║
+╠═══════════════════════════════════════════════════════════════╣
+║  1. Click "Physical Meeting"                                  ║
+║  2. Choose "Record Now" or "Upload Recording"                 ║
+║  3. Enter meeting title                                       ║
+║  4. Click "Transcribe" button                                 ║
+║  5. Click "Generate Summary" button                           ║
+╚═══════════════════════════════════════════════════════════════╝
+
+╔═══════════════════════════════════════════════════════════════╗
+║                   RECORD ONLINE MEETING                       ║
+╠═══════════════════════════════════════════════════════════════╣
+║  1. Click "Online Meeting"                                    ║
+║  2. Enter Google Meet URL                                     ║
+║  3. Bot joins and records automatically                       ║
+║  4. Click "Leave Meeting" when done                           ║
+║  5. Click "Transcribe" → "Generate Summary"                   ║
+║                                                                ║
+║  Note: Echo reduction is automatically applied                ║
+╚═══════════════════════════════════════════════════════════════╝
+
+╔═══════════════════════════════════════════════════════════════╗
+║                     COMMON ISSUES                             ║
+╠═══════════════════════════════════════════════════════════════╣
+║  Issue: Backend/Frontend won't start                          ║
+║  Fix:   1. Run STOP_MERITEL.bat                               ║
+║         2. Wait 10 seconds                                    ║
+║         3. Run START_MERITEL.bat again                        ║
+║                                                                ║
+║  Issue: "Port already in use"                                 ║
+║  Fix:   Run STOP_MERITEL.bat, then restart                    ║
+║                                                                ║
+║  Issue: Transcription fails                                   ║
+║  Fix:   Check internet connection and API keys in .env        ║
+║                                                                ║
+║  Issue: Echo in recordings                                    ║
+║  Fix:   Already reduced automatically. If still present:      ║
+║         - Use physical meeting mode, or                       ║
+║         - Ask participants to use headphones                  ║
+╚═══════════════════════════════════════════════════════════════╝
+
+╔═══════════════════════════════════════════════════════════════╗
+║                    PROCESSING TIMES                           ║
+╠═══════════════════════════════════════════════════════════════╣
+║  10-minute meeting:  ~30 seconds transcription                ║
+║  30-minute meeting:  ~1-2 minutes transcription               ║
+║  60-minute meeting:  ~3-4 minutes transcription               ║
+║  Summary generation: 5-10 seconds (any length)                ║
+╚═══════════════════════════════════════════════════════════════╝
+
+╔═══════════════════════════════════════════════════════════════╗
+║                      IMPORTANT NOTES                          ║
+╠═══════════════════════════════════════════════════════════════╣
+║  • Keep both command windows open while using MeriTel         ║
+║  • Don't close windows until you're done for the day          ║
+║  • Meetings are saved in: backend/data/meetings/              ║
+║  • Backup data folder regularly                               ║
+║  • Internet required for transcription and summarization      ║
+╚═══════════════════════════════════════════════════════════════╝
+
+╔═══════════════════════════════════════════════════════════════╗
+║                         SUPPORT                               ║
+╠═══════════════════════════════════════════════════════════════╣
+║  Email: meriamkaleche@gmail.com                               ║
+║  Include: Screenshot and description of problem               ║
+╚═══════════════════════════════════════════════════════════════╝
+
+                          Version 2.0
+              Last Updated: January 2026

@@ -368,9 +368,27 @@ def transcribe_meeting(meeting_id):
         print(f"Starting transcription for {meeting_id} using {service}")
         print(f"Audio file: {audio_file_path}")
         
+        # Apply echo reduction for online meetings
+        processed_audio_path = audio_file_path
+        meeting_type = meeting.get('meeting_type', 'physical')
+        
+        if meeting_type == 'online':
+            print("Applying echo reduction for online meeting...")
+            try:
+                temp_processed = audio_file_path.replace('.webm', '_echo_reduced.webm')
+                processed_audio_path = audio_processor.process_meeting_audio(
+                    audio_file_path, 
+                    temp_processed, 
+                    apply_echo_reduction=True
+                )
+                print(f"Echo reduction applied, using processed audio: {processed_audio_path}")
+            except Exception as e:
+                print(f"Echo reduction failed, using original audio: {str(e)}")
+                processed_audio_path = audio_file_path
+        
         transcriber = WordTimestampTranscriber(service=service, api_key=api_key)
         
-        result = transcriber.transcribe_with_timestamps(audio_file_path)
+        result = transcriber.transcribe_with_timestamps(processed_audio_path)
         print(f"Transcription completed: {len(result.get('segments', []))} segments")
         
         participants = meeting.get('participants', [])
