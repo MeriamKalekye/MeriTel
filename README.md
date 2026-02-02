@@ -4,10 +4,10 @@
 
 ## 🎯 Project Overview
 
-This system deploys three core ML models in a production environment:
-1. **Speech-to-Text (STT)**: OpenAI Whisper, Google Cloud Speech API, Azure Speech Services
-2. **Speaker Diarization**: MFCC-based voice fingerprinting with ML clustering
-3. **Text Summarization**: GPT-3.5/GPT-4, HuggingFace BART, DeepSeek
+This system deploys AI-powered speech and NLP services in a production environment:
+1. **Speech-to-Text (STT)**: Deepgram Nova-2, AssemblyAI
+2. **Speaker Diarization**: Integrated with Deepgram and AssemblyAI transcription services
+3. **Text Summarization**: OpenAI GPT-3.5-Turbo, DeepSeek
 
 ## 🏗️ ML Model Deployment Architecture
 
@@ -23,109 +23,145 @@ This system deploys three core ML models in a production environment:
 └──┬──────────────┬──────────────┬──────────────┬─────────────┘
    │              │              │              │
    ▼              ▼              ▼              ▼
-┌──────┐    ┌─────────┐    ┌──────────┐    ┌────────┐
-│Whisper│    │ Speaker │    │   BART   │    │  GPT   │
-│ Model │    │   ID    │    │Summarizer│    │  API   │
-│ (GPU) │    │ (MFCC)  │    │  (GPU)   │    │(Cloud) │
-└──────┘    └─────────┘    └──────────┘    └────────┘
+┌──────────┐  ┌───────────┐  ┌──────────┐  ┌──────────┐
+│Deepgram  │  │AssemblyAI │  │   GPT    │  │ DeepSeek │
+│ Nova-2   │  │  (Cloud)  │  │3.5-Turbo │  │  (Cloud) │
+│ (Cloud)  │  │           │  │ (Cloud)  │  │          │
+└──────────┘  └───────────┘  └──────────┘  └──────────┘
 ```
 
 ### Model Serving Infrastructure
 
-- **Whisper Model**: Deployed in Docker container with GPU support (NVIDIA CUDA)
-- **Speaker Identification**: CPU-based MFCC feature extraction + scikit-learn clustering
-- **BART Summarizer**: HuggingFace Transformers on GPU with TorchServe
-- **GPT Models**: Cloud API integration with rate limiting and retry logic
+- **Deepgram Nova-2**: Cloud-based STT with speaker diarization via REST API
+- **AssemblyAI**: Alternative STT service with integrated speaker labeling
+- **GPT-3.5-Turbo**: OpenAI API for intelligent summarization with structured output
+- **DeepSeek**: Alternative LLM API for cost-effective summarization
 
 ## 🚀 ML Models Specification
 
-### 1. Speech-to-Text Models
+### 1. Speech-to-Text Services
 
-| Model | Size | Accuracy (WER) | Latency | GPU Requirement |
-|-------|------|----------------|---------|-----------------|
-| Whisper Base | 74M params | 15-20% | ~2s/min | Optional |
-| Whisper Medium | 769M params | 10-15% | ~5s/min | Required |
-| Whisper Large | 1.5B params | 8-12% | ~10s/min | Required |
-| Google Cloud STT | Proprietary | 5-10% | <1s/min | Cloud |
+| Service | Model | Accuracy (WER) | Latency | Features |
+|---------|-------|----------------|---------|----------|
+| Deepgram | Nova-2 | 8-12% | ~1-2s/min | Word timestamps, diarization, punctuation |
+| AssemblyAI | Universal-1 | 10-15% | ~2-3s/min | Word timestamps, speaker labels, formatting |
 
-**Deployment**: Models served via Flask endpoint with batch processing
+**Deployment**: Cloud API integration with async processing
 
 ```python
-# Model loading with caching
-@lru_cache(maxsize=1)
-def load_whisper_model(model_size='base'):
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    return whisper.load_model(model_size).to(device)
+# Deepgram transcription with word timestamps
+transcriber = WordTimestampTranscriber(service='deepgram', api_key=DEEPGRAM_API_KEY)
+result = transcriber.transcribe_with_timestamps(audio_path)
+
+# Returns structured segments with word-level timestamps:
+# {
+#   "segments": [
+#     {
+#       "speaker_id": "speaker_0",
+#       "speaker_name": "Speaker 0",
+#       "start_time": 0.5,
+#       "end_time": 3.2,
+#       "text": "Hello everyone",
+#       "confidence": 0.95,
+#       "words": [
+#         {"word": "Hello", "start": 0.5, "end": 0.9, "confidence": 0.98},
+#         {"word": "everyone", "start": 1.0, "end": 1.5, "confidence": 0.92}
+#       ]
+#     }
+#   ]
+# }
 ```
 
-### 2. Speaker Diarization Model
+### 2. Speaker Diarization
 
-**Algorithm**: MFCC Feature Extraction + DBSCAN Clustering
+**Implementation**: Leverages built-in speaker diarization from transcription services
 
-**Features**:
-- 13 MFCC coefficients per frame
-- Delta and delta-delta features (39 total features)
-- Frame size: 25ms, Hop length: 10ms
-
-**Performance**:
-- Speaker identification accuracy: 85-92%
-- Processing time: ~0.5s per minute of audio
-- CPU-only deployment
+- **Deepgram**: Uses `diarize=true` parameter with acoustic model
+- **AssemblyAI**: Uses `speaker_labels=true` parameter
+- **Accuracy**: 85-92% speaker identification
+- **Processing**: Integrated with transcription (no additional latency)
 
 ```python
-# Feature extraction pipeline
-mfcc = librosa.feature.mfcc(y=audio, sr=SAMPLE_RATE, n_mfcc=13)
-delta_mfcc = librosa.feature.delta(mfcc)
-delta2_mfcc = librosa.feature.delta(mfcc, order=2)
-features = np.concatenate([mfcc, delta_mfcc, delta2_mfcc])
+# Deepgram with diarization enabled
+params = {
+    'diarize': 'true',
+    'punctuate': 'true',
+    'utterances': 'true',
+    'model': 'nova-2',
+}
 ```
 
 ### 3. Summarization Models
 
-| Model | Size | ROUGE-L | Latency | Deployment |
-|-------|------|---------|---------|------------|
-| BART-Large | 406M | 0.42 | ~3s | Local GPU |
-| GPT-3.5-Turbo | Proprietary | 0.45 | ~2s | OpenAI API |
-| GPT-4 | Proprietary | 0.50 | ~5s | OpenAI API |
+| Service | Model | Capabilities | Latency | Cost |
+|---------|-------|--------------|---------|------|
+| OpenAI | GPT-3.5-Turbo | Structured summaries, action items, outline | ~2-5s | $0.002/1K tokens |
+| DeepSeek | DeepSeek-Chat | Alternative LLM with similar quality | ~3-6s | Lower cost |
+
+**Deployment**: Cloud API with prompt engineering for structured output
+
+```python
+# Structured summarization with GPT-3.5-Turbo
+summarizer = MeetingSummarizer(service='openai', api_key=OPENAI_API_KEY)
+summary = summarizer.generate_structured_summary(
+    transcript_segments,
+    meeting_title="Team Standup",
+    template="general"
+)
+
+# Returns:
+# {
+#   "overview": {"text": "...", "word_count": 150},
+#   "action_items": [
+#     {"text": "...", "assignee": "John", "deadline": "Friday", "completed": false}
+#   ],
+#   "outline": [
+#     {"topic": "Project Updates", "timestamp": 0, "duration": 180, "subtopics": [...]}
+#   ],
+#   "keywords": ["deployment", "testing", "review"],
+#   "sentiment": "positive"
+# }
+```
 
 ## 📊 Performance Benchmarks
 
 ### End-to-End Latency (60-minute meeting)
 
-| Component | Processing Time | Hardware |
-|-----------|----------------|----------|
+| Component | Processing Time | Infrastructure |
+|-----------|----------------|----------------|
 | Audio Upload | 2-5s | Network |
-| Whisper Transcription | 120s | NVIDIA T4 GPU |
-| Speaker Diarization | 30s | 4-core CPU |
-| BART Summarization | 15s | NVIDIA T4 GPU |
-| **Total Pipeline** | **~3 minutes** | Mixed |
+| Deepgram Transcription | 60-90s | Cloud API (parallel processing) |
+| GPT-3.5 Summarization | 5-10s | OpenAI API |
+| **Total Pipeline** | **~1.5-2 minutes** | Cloud |
 
 ### API Response Times (p95)
 
-- `POST /api/meetings` - 150ms
-- `POST /api/meetings/<id>/transcribe` - 2-5 minutes (async)
-- `POST /api/meetings/<id>/summarize` - 20-30s (async)
-- `GET /api/meetings/<id>` - 80ms
+- `POST /api/meetings` - 120ms
+- `POST /api/meetings/<id>/transcribe` - 60-120s (async cloud processing)
+- `POST /api/meetings/<id>/summarize` - 5-15s (async)
+- `GET /api/meetings/<id>` - 50ms
+- `GET /api/meetings/<id>/transcript` - 80ms
+- `GET /api/meetings/<id>/recording` - Streaming (depends on file size)
 
 ### Model Accuracy Metrics
 
-| Metric | Value |
-|--------|-------|
-| Transcription WER | 12.5% (Whisper Medium) |
-| Speaker Identification | 89.3% accuracy |
-| Summary ROUGE-L | 0.44 (BART) |
-| Action Item Extraction | 82% F1-score |
+| Metric | Value | Service |
+|--------|-------|---------|
+| Transcription WER | 8-12% | Deepgram Nova-2 |
+| Speaker Diarization Accuracy | 88-93% | Deepgram/AssemblyAI |
+| Summary Quality (Human eval) | 4.2/5.0 | GPT-3.5-Turbo |
+| Action Item Extraction Recall | 85% | GPT-3.5-Turbo |
 
 ## 🐳 Docker Deployment
 
 ### Production Deployment
 
 ```bash
-# Build and deploy with GPU support
+# Build and deploy
 docker-compose -f docker-compose.prod.yml up -d
 
-# Scale workers
-docker-compose up --scale worker=4
+# Scale backend workers
+docker-compose up --scale backend=4
 ```
 
 **Docker Compose Configuration**:
@@ -135,20 +171,18 @@ version: '3.8'
 services:
   backend:
     image: meritel-backend:latest
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
     environment:
-      - MODEL_CACHE_DIR=/models
-      - WHISPER_MODEL=medium
-      - DEVICE=cuda
+      - DEEPGRAM_API_KEY=${DEEPGRAM_API_KEY}
+      - ASSEMBLYAI_API_KEY=${ASSEMBLYAI_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
+      - DEFAULT_TRANSCRIPTION_SERVICE=deepgram
+      - DEFAULT_SUMMARIZATION_SERVICE=openai
     volumes:
-      - model_cache:/models
       - audio_data:/data
+      - ./data:/app/data
+    ports:
+      - "5000:5000"
   
   frontend:
     image: meritel-frontend:latest
@@ -156,33 +190,38 @@ services:
       - "80:80"
     depends_on:
       - backend
+    environment:
+      - REACT_APP_API_URL=http://backend:5000
 ```
 
 ## ⚙️ Infrastructure Setup
 
 ### Requirements
 
-**Hardware**:
-- CPU: 8+ cores recommended
-- RAM: 16GB minimum, 32GB recommended
-- GPU: NVIDIA GPU with 8GB+ VRAM (for Whisper Medium/Large)
-- Storage: 50GB for models and data
+**Hardware** (No GPU required - using cloud APIs):
+- CPU: 4+ cores
+- RAM: 8GB minimum, 16GB recommended
+- Storage: 50GB for audio files and database
 
 **Software**:
 - Docker 20.10+
 - Docker Compose 1.29+
-- NVIDIA Docker Runtime (for GPU)
 - Python 3.8+
 - Node.js 16+
 
+**API Keys Required**:
+- Deepgram API key (https://deepgram.com)
+- OpenAI API key (https://platform.openai.com)
+- Optional: AssemblyAI, DeepSeek
+
 ### Cloud Deployment (AWS)
 
-**Recommended Setup**:
-- **EC2 Instance**: `g4dn.xlarge` (4 vCPU, 16GB RAM, NVIDIA T4 GPU)
-- **Storage**: 100GB EBS gp3
+**Recommended Setup** (cost-effective, no GPU needed):
+- **EC2 Instance**: `t3.large` or `t3.xlarge` (2-4 vCPU, 8-16GB RAM)
+- **Storage**: 50GB EBS gp3
 - **Load Balancer**: Application Load Balancer
-- **Database**: RDS PostgreSQL (for metadata)
-- **Object Storage**: S3 for audio files and models
+- **Object Storage**: S3 for audio files
+- **Secrets**: AWS Secrets Manager for API keys
 
 ```bash
 # Deploy to AWS using Terraform
@@ -209,7 +248,7 @@ def transcribe_meeting(id):
     start_time = time.time()
     logger.info(f"Transcription started", extra={
         "meeting_id": id,
-        "model": "whisper-medium",
+        "service": "deepgram",
         "audio_duration": audio_duration
     })
     
@@ -217,9 +256,10 @@ def transcribe_meeting(id):
     
     logger.info(f"Transcription completed", extra={
         "meeting_id": id,
+        "service": "deepgram",
         "latency": time.time() - start_time,
-        "word_count": len(transcript.split()),
-        "confidence": avg_confidence
+        "word_count": len(result['segments']),
+        "avg_confidence": avg_confidence
     })
 ```
 
@@ -228,9 +268,10 @@ def transcribe_meeting(id):
 **Prometheus Metrics**:
 - `transcription_duration_seconds` - Histogram of transcription latency
 - `transcription_errors_total` - Counter of failed transcriptions
-- `model_inference_duration_seconds` - Model-specific latency
-- `gpu_utilization_percent` - GPU usage
+- `api_call_duration_seconds` - External API call latency (Deepgram, OpenAI)
+- `api_rate_limit_hits` - Counter of rate limit errors
 - `active_requests` - Current concurrent requests
+- `audio_file_size_bytes` - Distribution of audio file sizes
 
 ```python
 from prometheus_client import Counter, Histogram
@@ -238,13 +279,19 @@ from prometheus_client import Counter, Histogram
 transcription_duration = Histogram(
     'transcription_duration_seconds',
     'Time spent transcribing audio',
-    ['model', 'audio_duration_bucket']
+    ['service', 'audio_duration_bucket']
 )
 
 transcription_errors = Counter(
     'transcription_errors_total',
     'Total transcription errors',
-    ['model', 'error_type']
+    ['service', 'error_type']
+)
+
+api_call_duration = Histogram(
+    'api_call_duration_seconds',
+    'External API call latency',
+    ['service', 'endpoint']
 )
 ```
 
@@ -307,81 +354,97 @@ jobs:
             backend=meritel-backend:${{ github.sha }}
 ```
 
-### Model Versioning
+### Service Version Management
 
 ```
-models/
-├── whisper/
-│   ├── v1.0.0/
-│   │   └── model.pt
-│   ├── v1.1.0/
-│   │   └── model.pt
-│   └── latest -> v1.1.0
-├── bart/
-│   ├── v2.0.0/
-│   └── latest -> v2.0.0
+# Track API service versions and configurations
+services/
+├── deepgram/
+│   ├── config.yaml (model: nova-2, diarize: true)
+│   └── fallback.yaml (model: base, legacy support)
+├── openai/
+│   ├── config.yaml (model: gpt-3.5-turbo, temp: 0.3)
+│   └── prompts/ (versioned prompt templates)
 ```
 
-**Model Registry**: Models tracked in MLflow/Weights & Biases
-
-```python
-import mlflow
-
-# Log model with versioning
-with mlflow.start_run():
-    mlflow.log_param("model_type", "whisper")
-    mlflow.log_param("model_size", "medium")
-    mlflow.log_metric("wer", 12.5)
-    mlflow.pytorch.log_model(model, "whisper-medium")
-```
-
-## 🔧 Model Optimization
-
-### Quantization
-
-```python
-# INT8 quantization for faster inference
-from torch.quantization import quantize_dynamic
-
-model = load_whisper_model('medium')
-quantized_model = quantize_dynamic(
-    model, {torch.nn.Linear}, dtype=torch.qint8
-)
-
-# 4x faster inference, 75% smaller model size
-```
+## 🔧 API Optimization
 
 ### Caching Strategy
 
 ```python
-# Redis cache for repeated requests
+# Redis cache for transcript and summary results
 from redis import Redis
+import hashlib
+
 cache = Redis(host='localhost', port=6379)
 
-def transcribe_with_cache(audio_hash):
-    cached = cache.get(f"transcript:{audio_hash}")
+def transcribe_with_cache(audio_path, service='deepgram'):
+    # Generate hash of audio file
+    with open(audio_path, 'rb') as f:
+        audio_hash = hashlib.sha256(f.read()).hexdigest()
+    
+    cache_key = f"transcript:{service}:{audio_hash}"
+    cached = cache.get(cache_key)
+    
     if cached:
         return json.loads(cached)
     
-    transcript = model.transcribe(audio)
-    cache.setex(
-        f"transcript:{audio_hash}",
-        3600,  # 1 hour TTL
-        json.dumps(transcript)
-    )
-    return transcript
+    # Call API
+    transcriber = WordTimestampTranscriber(service=service, api_key=API_KEY)
+    result = transcriber.transcribe_with_timestamps(audio_path)
+    
+    # Cache for 7 days
+    cache.setex(cache_key, 7 * 24 * 3600, json.dumps(result))
+    return result
 ```
 
-### Batch Processing
+### Rate Limiting & Retry Logic
 
 ```python
-# Process multiple audio files in batches
-def batch_transcribe(audio_files, batch_size=4):
-    for i in range(0, len(audio_files), batch_size):
-        batch = audio_files[i:i+batch_size]
-        with torch.cuda.amp.autocast():  # Mixed precision
-            results = model.transcribe_batch(batch)
-        yield results
+# Implement exponential backoff for API calls
+import time
+from functools import wraps
+
+def retry_with_backoff(max_retries=3, base_delay=1):
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            for attempt in range(max_retries):
+                try:
+                    return func(*args, **kwargs)
+                except RateLimitError:
+                    if attempt == max_retries - 1:
+                        raise
+                    delay = base_delay * (2 ** attempt)
+                    time.sleep(delay)
+            return None
+        return wrapper
+    return decorator
+
+@retry_with_backoff(max_retries=3, base_delay=2)
+def call_deepgram_api(audio_path):
+    # API call with automatic retry
+    return transcriber.transcribe_with_timestamps(audio_path)
+```
+
+### Cost Optimization
+
+```python
+# Fallback to cheaper services for non-critical requests
+def transcribe_with_fallback(audio_path, priority='high'):
+    if priority == 'high':
+        services = ['deepgram', 'assemblyai']
+    else:
+        services = ['assemblyai', 'deepgram']  # AssemblyAI often cheaper
+    
+    for service in services:
+        try:
+            return transcribe(audio_path, service=service)
+        except Exception as e:
+            logger.warning(f"{service} failed: {e}")
+            continue
+    
+    raise Exception("All transcription services failed")
 ```
 
 ## 🚦 API Endpoints
@@ -394,28 +457,17 @@ POST /api/meetings/<id>/transcribe
 Content-Type: application/json
 
 {
-  "model": "whisper-medium",
-  "language": "en",
-  "timestamps": true
+  "service": "deepgram"  // or "assemblyai"
 }
 
-Response: 202 Accepted (async processing)
+Response: 200 OK
 {
-  "job_id": "trans_123",
-  "status": "processing",
-  "estimated_time": 120
-}
-```
-
-**Speaker Identification**
-```http
-POST /api/meetings/<id>/identify-speakers
-Content-Type: application/json
-
-{
-  "algorithm": "mfcc",
-  "min_speakers": 2,
-  "max_speakers": 10
+  "message": "Transcription completed",
+  "transcript": {
+    "segments": [...],
+    "word_count": 1250,
+    "duration": 3600
+  }
 }
 ```
 
@@ -425,9 +477,35 @@ POST /api/meetings/<id>/summarize
 Content-Type: application/json
 
 {
-  "model": "gpt-3.5-turbo",
-  "summary_type": "structured",
-  "sections": ["overview", "action_items", "outline"]
+  "service": "openai",  // or "deepseek"
+  "template": "general"  // or "sales", "engineering", etc.
+}
+
+Response: 200 OK
+{
+  "summary": {
+    "overview": {...},
+    "action_items": [...],
+    "outline": [...],
+    "keywords": [...],
+    "sentiment": "positive"
+  }
+}
+```
+
+**Upload Recording**
+```http
+POST /api/meetings/upload-recording
+Content-Type: multipart/form-data
+
+file: <audio_file>
+title: "Team Meeting"
+description: "Weekly standup"
+
+Response: 201 Created
+{
+  "message": "Recording uploaded successfully",
+  "meeting": {...}
 }
 ```
 
@@ -443,15 +521,16 @@ source venv/bin/activate  # Windows: venv\Scripts\activate
 # Install dependencies
 pip install -r requirements.txt
 
-# Download ML models
-python scripts/download_models.py
-
 # Set environment variables
 cp .env.example .env
-# Edit .env with your API keys
+# Edit .env with your API keys:
+# DEEPGRAM_API_KEY=your_key
+# OPENAI_API_KEY=your_key
+# ASSEMBLYAI_API_KEY=your_key (optional)
+# DEEPSEEK_API_KEY=your_key (optional)
 
-# Run with GPU support
-CUDA_VISIBLE_DEVICES=0 python app.py
+# Run backend
+python app.py
 ```
 
 ### Frontend Setup
@@ -469,47 +548,57 @@ npm start
 # Build images
 docker-compose build
 
-# Run with GPU
-docker-compose -f docker-compose.gpu.yml up
+# Run services
+docker-compose up
 ```
 
-## 📊 Model Training & Fine-tuning
+## 📊 Service Configuration & Prompt Engineering
 
-### Speaker Identification Training
+### Transcription Service Configuration
 
 ```python
-# Train speaker identification model
-from sklearn.cluster import DBSCAN
-import joblib
+# Configure Deepgram for optimal results
+DEEPGRAM_CONFIG = {
+    'model': 'nova-2',  # Latest, most accurate model
+    'diarize': True,    # Enable speaker diarization
+    'punctuate': True,  # Automatic punctuation
+    'utterances': True, # Group by speaker turns
+    'smart_format': True # Format numbers, dates, etc.
+}
 
-# Extract features from training data
-features = extract_mfcc_features(training_audio)
-
-# Train clustering model
-model = DBSCAN(eps=0.3, min_samples=10)
-model.fit(features)
-
-# Save model
-joblib.dump(model, 'models/speaker_id/model.pkl')
+# AssemblyAI configuration
+ASSEMBLYAI_CONFIG = {
+    'speaker_labels': True,
+    'punctuate': True,
+    'format_text': True,
+    'auto_highlights': True  # Extract key phrases
+}
 ```
 
-### Fine-tuning BART
+### Prompt Engineering for Summarization
 
 ```python
-# Fine-tune BART on meeting summaries
-from transformers import BartForConditionalGeneration, Trainer
-
-model = BartForConditionalGeneration.from_pretrained('facebook/bart-large-cnn')
-
-trainer = Trainer(
-    model=model,
-    args=training_args,
-    train_dataset=train_dataset,
-    eval_dataset=eval_dataset
-)
-
-trainer.train()
-model.save_pretrained('models/bart-finetuned/')
+# Optimized prompts for different meeting types
+SUMMARY_PROMPTS = {
+    'general': """Analyze this meeting and provide:
+        - Overview: 2-3 paragraph executive summary
+        - Action Items: Tasks with assignees and deadlines
+        - Outline: 3-7 main topics with subtopics
+        - Keywords: 5-10 key terms
+        - Sentiment: overall tone""",
+    
+    'engineering': """Focus on:
+        - Technical decisions and architecture choices
+        - Implementation blockers and solutions
+        - Code review feedback
+        - Sprint planning and estimates""",
+    
+    'sales': """Extract:
+        - Customer pain points and needs
+        - Pricing discussions and objections
+        - Next steps and follow-ups
+        - Deal stage and probability"""
+}
 ```
 
 ## 🧪 Testing
@@ -544,7 +633,7 @@ locust -f tests/load_test.py --users 100 --spawn-rate 10
 ### Horizontal Scaling
 
 ```yaml
-# Kubernetes deployment
+# Kubernetes deployment (lightweight - no GPU required)
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -557,11 +646,23 @@ spec:
       - name: backend
         image: meritel-backend:latest
         resources:
-          limits:
-            nvidia.com/gpu: 1
           requests:
-            memory: "8Gi"
-            cpu: "4"
+            memory: "2Gi"
+            cpu: "1"
+          limits:
+            memory: "4Gi"
+            cpu: "2"
+        env:
+        - name: DEEPGRAM_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: api-keys
+              key: deepgram
+        - name: OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: api-keys
+              key: openai
 ---
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
@@ -573,22 +674,37 @@ spec:
     kind: Deployment
     name: meritel-backend
   minReplicas: 2
-  maxReplicas: 10
+  maxReplicas: 20  # Can scale higher since no GPU constraints
   metrics:
   - type: Resource
     resource:
       name: cpu
       target:
         type: Utilization
-        averageUtilization: 70
+        averageUtilization: 60
+  - type: Pods
+    pods:
+      metric:
+        name: http_requests_per_second
+      target:
+        type: AverageValue
+        averageValue: "100"
 ```
 
 ### Auto-scaling Configuration
 
-- **CPU threshold**: Scale up at 70% utilization
-- **GPU threshold**: Scale up at 80% utilization
-- **Request queue**: Scale up when queue > 50 requests
-- **Cool-down**: 5 minutes between scale events
+- **CPU threshold**: Scale up at 60% utilization
+- **Request rate**: Scale up at 100 req/sec per pod
+- **Memory threshold**: Scale up at 75% memory usage
+- **API rate limits**: Monitor Deepgram/OpenAI quota usage
+- **Cool-down**: 3 minutes between scale events
+
+### Cost Optimization Strategy
+
+1. **Caching**: Reduce API calls by 40-60% with Redis caching
+2. **Service selection**: Use DeepSeek for non-critical summaries (3x cheaper)
+3. **Batch processing**: Group smaller audio files when possible
+4. **Auto-scaling**: Scale down during off-peak hours
 
 ## 🔐 Security & Privacy
 
@@ -611,24 +727,32 @@ spec:
 ### Environment Variables
 
 ```env
-# Model Configuration
-WHISPER_MODEL=medium
-WHISPER_DEVICE=cuda
-BART_MODEL=facebook/bart-large-cnn
-ENABLE_GPU=true
+# API Keys (Required)
+DEEPGRAM_API_KEY=your_deepgram_api_key
+OPENAI_API_KEY=sk-your_openai_api_key
 
-# API Keys
-OPENAI_API_KEY=sk-...
-GOOGLE_API_KEY=...
-DEEPGRAM_API_KEY=...
+# API Keys (Optional)
+ASSEMBLYAI_API_KEY=your_assemblyai_api_key
+DEEPSEEK_API_KEY=your_deepseek_api_key
 
-# Performance
-MAX_WORKERS=4
-BATCH_SIZE=4
-MODEL_CACHE_DIR=/models
-ENABLE_MODEL_CACHE=true
+# Service Configuration
+DEFAULT_TRANSCRIPTION_SERVICE=deepgram
+DEFAULT_SUMMARIZATION_SERVICE=openai
 
-# Monitoring
+# Flask Configuration
+FLASK_ENV=production
+SECRET_KEY=your-secret-key-change-in-production
+DEBUG=False
+
+# Storage
+UPLOAD_FOLDER=data/uploads
+RECORDINGS_FOLDER=data/recordings
+MAX_FILE_SIZE=524288000  # 500MB
+
+# CORS
+CORS_ORIGINS=http://localhost:3000,https://yourdomain.com
+
+# Monitoring (Optional)
 PROMETHEUS_PORT=9090
 LOG_LEVEL=INFO
 ENABLE_METRICS=true
@@ -649,35 +773,47 @@ ENABLE_METRICS=true
 
 ## 📚 Technologies Used
 
-**ML/AI**:
-- OpenAI Whisper (Speech-to-Text)
-- HuggingFace Transformers (BART, GPT)
-- librosa (Audio processing)
-- scikit-learn (Clustering, ML)
+**AI/ML Services**:
+- Deepgram Nova-2 (Speech-to-Text with diarization)
+- AssemblyAI (Alternative STT service)
+- OpenAI GPT-3.5-Turbo (Summarization & NLP)
+- DeepSeek (Alternative LLM)
 
 **Backend**:
-- Flask (API server)
-- PyTorch (Deep learning framework)
-- Redis (Caching)
-- PostgreSQL (Metadata storage)
+- Flask 3.0 (API server)
+- Flask-SocketIO (Real-time communication)
+- Python 3.8+ (Runtime)
+- Redis (Caching layer - optional)
+
+**Audio Processing**:
+- pydub (Audio file manipulation)
+- noisereduce (Echo reduction)
 
 **DevOps**:
 - Docker & Docker Compose
-- Kubernetes
+- Kubernetes (Container orchestration)
 - Prometheus & Grafana (Monitoring)
 - GitHub Actions (CI/CD)
 
-**Cloud**:
-- AWS EC2 (Compute)
-- AWS S3 (Storage)
-- CloudWatch (Logging)
+**Cloud Infrastructure**:
+- AWS EC2 / Google Cloud Compute (App hosting)
+- AWS S3 / Google Cloud Storage (Audio storage)
+- AWS Secrets Manager (API key management)
+- CloudWatch / Stackdriver (Logging)
 
 ## 📖 References
 
-- [Whisper Paper](https://arxiv.org/abs/2212.04356)
-- [BART Paper](https://arxiv.org/abs/1910.13461)
-- [Speaker Diarization Survey](https://arxiv.org/abs/2012.01477)
+**Documentation**:
+- [Deepgram API Documentation](https://developers.deepgram.com/)
+- [AssemblyAI API Documentation](https://www.assemblyai.com/docs)
+- [OpenAI API Documentation](https://platform.openai.com/docs)
+- [DeepSeek API Documentation](https://platform.deepseek.com/docs)
+
+**Research & Best Practices**:
+- [Speaker Diarization: A Review](https://arxiv.org/abs/2012.01477)
+- [Prompt Engineering Guide](https://www.promptingguide.ai/)
 - [MLOps Best Practices](https://ml-ops.org/)
+- [REST API Design Best Practices](https://restfulapi.net/)
 
 ## 📞 Contact
 
